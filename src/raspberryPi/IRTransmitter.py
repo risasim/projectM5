@@ -1,48 +1,3 @@
-# need pigpio lib for this (should be on the rpi automatically)
-# make sure pigpio deamon is running
-    # sudo apt-get update
-    # sudo apt-get install pigpio python3-pigpio
-
-    # sudo systemctl enable pigpiod
-    # sudo systemctl start pigpiod
-
-# also use a pwm pin (GPIO18)
-
-import pigpio
-import time
-
-
-def shoot():
-
-    PWM_GPIO = 18
-
-    FREQ = 38000
-
-    DUTY_CYCLE_MILLION = 500000
-
-    pi = pigpio.pi()
-
-    if not pi.connected:
-        print("cant make connection to pigpio deamon check if it is running")
-        exit()
-
-    try:
-        pi.hardware_PWM(PWM_GPIO, FREQ, DUTY_CYCLE_MILLION)
-        print("sending carrier wave")
-
-        time.sleep(5)
-
-        pi.hardware_PWM(PWM_GPIO, 0, 0)
-        print("stopped sending carrier wave")
-    except Exception as e:
-        print(f"something went wrong: {e}")
-
-    finally:
-        pi.stop()
-        print("pigpio connection closed")
-
-
-
 ## for this we need LIRC
     # sudo apt update
     # sudo apt install lirc
@@ -103,8 +58,8 @@ import time
 
 def shootwithinfo():
 
-    REMOTE = "SENDER_A"
-    KEY = "ID_SIGNAL"
+    REMOTE = "SENDER_A" # still confused if these things 
+    KEY = "ID_SIGNAL"   # need to be different per RPI or the 0x12345678
 
     try:
         

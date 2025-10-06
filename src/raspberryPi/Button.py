@@ -1,19 +1,41 @@
 from gpiozero import Button
 import time
 import IRTransmitter as IRT
-
+import Gunled
 GPIO_PIN = 15 # enter the pin that will be used
+
+
+timeList = []
 
 sensor = Button(GPIO_PIN, pull_up=True)
 
 
 
 def checkValidPress():
+    deltaList = []
+    for i in range(0, len(timeList)):
+        j = i + 1
+        if (j >= len(timeList)):
+            break
+        deltaList.append(timeList[j] - timeList[i])
+    
+
+    av = (sum(deltaList)/ len(deltaList));
+    if ( av < 500):
+        Gunled.changecolor("RED")
+        return False
+    elif (av < 1000):
+        Gunled.changecolor("ORANGE")
+        return True
+    else:
+        Gunled.changecolor("GREEN")
+        return True
     ## check if it is not spammed if so change color to orange / red to and do not shoot
-    return False
 
 def buttonpress():
-
+    if (len(timeList) >= 5):
+        timeList.pop(0)
+    timeList.append(time.perf_counter_ns)
     if (checkValidPress):
         # send signal to to send IRTransmitter
         IRT.shootwithinfo()

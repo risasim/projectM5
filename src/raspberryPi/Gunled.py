@@ -18,25 +18,9 @@ def changecolor(color):
     if (color == "ORANGE"):
         red_led.on()
         green_led.on()
-
-
-def main():
-    try:
-        while (True):
-            # red
-            red_led.on()
-            green_led.off()
-            time.sleep(5)
-            # green
-            red_led.off()
-            green_led.on()
-            time.sleep(5)
-            # orange
-            red_led.on()
-            green_led.on()
-            time.sleep(5)
-    except KeyboardInterrupt:
-        print("interrupted")
+    if (color == "NONE"):
+        red_led.off()
+        green_led.off()
 
 
 
