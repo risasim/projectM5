@@ -53,23 +53,74 @@
 ## lastly make sure the lirc lib for pyton is installed
     # pip3 install python-lirc
 
+
+#################
+# new config file 
+# # --- part 1: sender CONFIG (KY-005) ---
+# begin remote
+
+#   name  LOCAL_SENDER_RPI_{N}   # replace {N} by unique id rpi
+#   flags NEC
+#   eps          30
+#   aeps        100
+#   header      9000 4500
+#   one          560 1690
+#   zero         560  560
+#   ptrail       560
+#   repeat      9000 2250
+#   pre_data_bits  32
+#   pre_data      0xAAAAAA{N}    # unique RPI ID! 
+#   gap          108000
+#   toggle_bit_mask 0x0
+
+#       begin codes
+#           RPI_BROADCAST      0x00000001 # the code for send sig
+#       end codes
+
+# # end remote
+
+# # --- part 2: receiver CONFIG (KY-022) ---
+# begin remote
+
+#   name  ALL_RPI_RECEIVER       # generic name
+#   flags NEC | **NO_CODES**     # ignore codes 
+#   eps          30
+#   aeps        100
+#   header      9000 4500
+#   one          560 1690
+#   zero         560  560
+#   ptrail       560
+#   repeat      9000 2250
+#   pre_data_bits  32
+#   pre_data      0x0            # ignored because NO_CODES
+#   gap          108000
+#   toggle_bit_mask 0x0
+
+#       begin codes
+#           FULL_IR_CODE      0xFFFFFFFF # Placeholder,
+#       end codes
+
+# end remote
+
 import lirc
 import time
 
 def shootwithinfo():
 
-    REMOTE = "SENDER_A" # still confused if these things 
-    KEY = "ID_SIGNAL"   # need to be different per RPI or the 0x12345678
+    REMOTE = "SENDER_" # still confused if these things 
+    KEY = "ID_SIGNAL"  
 
     try:
         
-        client = lirc.client()
+        lirc.init("rpi_sender_client")
+        lirc.send_once(REMOTE, KEY)
         
-        client.send_once(REMOTE, KEY)
+        time.sleep(0.5)
     except Exception as e:
         print(f"something went worng with sending the lirc commant {e}")
         print("make sure lircd service is running and the configuration is correct")
         print("check this with: sudo systemctl status lircd")
     finally:
-        client.close()
+        if "sockeid" in locals():
+            lirc.deinit()
         pass
