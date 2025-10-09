@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS users{
+    id BIGSERIAL NOT NULL PRIMARY KEY,
+    isAdmin BIT NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    api_key VARCHAR(255),
+    pi_SN VARCHAR(255)
+}
