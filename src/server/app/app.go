@@ -72,3 +72,8 @@ func (a *App) Migrate() {
 		log.Println(err)
 	}
 }
+
+func (a *App) CreateRoutes() {
+	//routes := gin.Default()
+	//userController :=
+}
