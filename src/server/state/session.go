@@ -5,10 +5,13 @@ import (
 	"time"
 )
 
-// gameMode does prescribe functions that all of the gameModes share
+// GameMode does prescribe functions that all of the GameModes share
 type GameMode interface {
+	// registerHit() is a function to respond to getting a hit alert from the infrared receiver
 	registerHit() communication.HitResponse
+	// generateData is a function to generate the leaderboard data
 	generateData()
+	// finished is the function to determine if any GameMode is finished
 	finished() bool
 }
 
@@ -30,6 +33,11 @@ type FreeForAll struct {
 	session Session
 }
 
+func (ffl FreeForAll) registerHit() {
+
+}
+
+// finished returns true if the array length of dead people matches the array length of the player array in the session
 func (ffl FreeForAll) finished() bool {
 	return len(ffl.deadPeople) == len(ffl.session.player)
 }
@@ -45,7 +53,12 @@ type TeamDeathMatch struct {
 	session Session
 }
 
+// finished is the condition to determine if the TeamDeathMatch GameMode is finished
 func (tdm TeamDeathMatch) finished() bool {
+	// Checking the status of the session to determine if the game is finished
+	if tdm.session.status == idle {
+		return true
+	}
 	return false
 }
 
@@ -59,11 +72,19 @@ type Team struct {
 	score int
 }
 
+// Infected is a GameMode where one person starts the game being infected and their task in to
+// infect everyone else by shooting them and once another person gets infected they join the
+// infector group to infect others! Infectors cannot die!
 type Infected struct {
 	//infectedPeople that stores the people infected
 	infectedPeople []Player
 	// session that is the GameMode played in
 	session Session
+}
+
+// finished returns true if the array length of infected people matches the array length of the player array in the session
+func (inf Infected) finished() bool {
+	return len(inf.infectedPeople) == len(inf.session.player)
 }
 
 // Session does hold the common
