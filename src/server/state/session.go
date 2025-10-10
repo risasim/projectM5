@@ -1,7 +1,7 @@
 package state
 
 import (
-	"gitlab.utwente.nl/computer-systems-project/2025-2026/students-projects/cs25-29/project/src/server/communication"
+	"github.com/risasim/projectM5/project/src/server/communication"
 	"time"
 )
 

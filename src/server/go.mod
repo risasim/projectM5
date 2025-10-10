@@ -1,4 +1,4 @@
-module gitlab.utwente.nl/computer-systems-project/2025-2026/students-projects/cs25-29/project/src/server
+module github.com/risasim/projectM5/project/src/server
 
 go 1.24.0
 
@@ -18,6 +18,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.19.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

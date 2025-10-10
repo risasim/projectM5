@@ -3,10 +3,12 @@ package app
 import (
 	"database/sql"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	"github.com/risasim/projectM5/project/src/server/db"
 	"log"
 	"os"
 )
@@ -24,12 +26,12 @@ type config struct {
 // LoadConfig does load the data from the .env file
 func loadConfig() *config {
 	return &config{
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", ""),
-		DBName:     getEnv("DB_NAME", "mydb"),
-		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+		DBHost:     getEnv("POSTGRES_HOST", "localhost"),
+		DBPort:     getEnv("POSTGRES_PORT", "5432"),
+		DBUser:     getEnv("POSTGRES_USER", "postgres"),
+		DBPassword: getEnv("POSTGRES_PASSWORD", ""),
+		DBName:     getEnv("POSTGRES_DB", "mydb"),
+		DBSSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
 	}
 }
 
@@ -42,13 +44,14 @@ func getEnv(key, fallback string) string {
 
 // App holds the db and the gameManager in one structure
 type App struct {
-	DB *sql.DB
+	DB     *sql.DB
+	Routes *gin.Engine
 }
 
 // CreateConnection opens the connection with the db via the .env values
 func (a *App) CreateConnection() {
 	var config *config = loadConfig()
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s", config.DBUser, config.DBPassword, config.DBHost, config.DBName, config.DBSSLMode)
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", config.DBUser, config.DBPassword, config.DBHost, config.DBPort, config.DBName, config.DBSSLMode)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
@@ -63,7 +66,7 @@ func (a *App) Migrate() {
 		log.Println(err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://../db/migrations/",
+		"file:///db/migrations",
 		"PhoShoData", driver)
 	if err != nil {
 		log.Println(err)
@@ -74,6 +77,13 @@ func (a *App) Migrate() {
 }
 
 func (a *App) CreateRoutes() {
-	//routes := gin.Default()
-	//userController :=
+	routes := gin.Default()
+	userController := db.NewUserController(a.DB)
+	routes.GET("/users", userController.GetUsers)
+	routes.POST("/user", userController.InsertUser)
+	a.Routes = routes
+}
+
+func (a *App) Run() {
+	a.Routes.Run(":8080")
 }

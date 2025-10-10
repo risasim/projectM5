@@ -1,12 +1,14 @@
-LABEL authors="richardsimonik"
-
 # Use the official Golang image for building
-FROM golang:1.21 AS builder
+FROM golang:1.24-alpine AS builder
+
+LABEL authors="richardsimonik"
 # Set working directory
 WORKDIR /app
+# Install git (needed for go mod download)
+RUN apk add --no-cache git
 # Copy Go modules and dependencies
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download && go mod verify
 # Copy source code
 COPY . .
 # Build the application

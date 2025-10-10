@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"gitlab.utwente.nl/computer-systems-project/2025-2026/students-projects/cs25-29/project/src/server/db/model"
+	"github.com/risasim/projectM5/project/src/server/db/model"
 	"log"
 )
 

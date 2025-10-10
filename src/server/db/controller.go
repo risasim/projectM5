@@ -3,6 +3,9 @@ package db
 import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/risasim/projectM5/project/src/server/auth"
+	"github.com/risasim/projectM5/project/src/server/db/model"
 )
 
 type UserControllerInterface interface {
@@ -16,13 +19,23 @@ type UserController struct {
 
 func (u UserController) InsertUser(g *gin.Context) {
 	// TODO implement middleware for authentication
-	//db := u.db
-	//var user := model.PostUser
-	//if err := g.ShouldBindJSON(&user); err == nil {
-	//	usersRepo := NewUsersRepository(db)
-	//	//TODO implement the apikey generation and the password hashing
-	//	insert := usersRepo.InsertUser(user,)
-	//}
+	db := u.db
+	var user model.PostUser
+	if err := g.ShouldBindJSON(&user); err == nil {
+		hash, _ := auth.HashPassword(user.Password)
+		user.Password = hash
+		usersRepo := NewUsersRepository(db)
+		apiKey := uuid.New().String()
+		insert := usersRepo.InsertUser(user, apiKey, false)
+		if insert {
+			g.JSON(200, gin.H{"status": "sucess", "msg": "Inserted new User"})
+		} else {
+			g.JSON(500, gin.H{"status": "fail", "msg": "Something went wrong"})
+		}
+	} else {
+		g.JSON(400, gin.H{"status": "fail", "msg": "Failed to dework "})
+	}
+
 }
 
 func (u UserController) GetUsers(g *gin.Context) {
@@ -36,6 +49,6 @@ func (u UserController) GetUsers(g *gin.Context) {
 	}
 }
 
-func NewUserControllers(db *sql.DB) UserControllerInterface {
+func NewUserController(db *sql.DB) UserControllerInterface {
 	return &UserController{db: db}
 }

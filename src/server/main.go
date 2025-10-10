@@ -1,18 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+	"github.com/risasim/projectM5/project/src/server/app"
 )
 
 func main() {
-	fileserver := http.FileServer(http.Dir("../static"))
-
-	http.Handle("/", fileserver)
-
-	fmt.Printf("port running on http://localhost:8081/\n")
-	if err := http.ListenAndServe(":8081", nil); err != nil {
-		log.Fatal(err)
-	}
+	var app app.App
+	app.CreateConnection()
+	app.Migrate()
+	app.CreateRoutes()
+	app.Run()
 }
