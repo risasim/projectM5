@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
 	"database/sql"
@@ -66,10 +66,10 @@ func (a *App) Migrate() {
 		log.Println(err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file:///db/migrations",
-		"PhoShoData", driver)
+		"file:/./db/migrations",
+		"postgres", driver)
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 	if err := m.Steps(2); err != nil {
 		log.Println(err)

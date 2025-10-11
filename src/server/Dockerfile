@@ -19,6 +19,7 @@ FROM alpine:latest
 WORKDIR /root/
 # Copy the built binary from the builder stage
 COPY --from=builder /app/main .
+
 # Expose the application port
 EXPOSE 8080
 # Run the application
