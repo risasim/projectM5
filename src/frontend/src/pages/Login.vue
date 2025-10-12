@@ -5,7 +5,7 @@
       <form class="login-form">
         <input type="text" placeholder="Username" class="login-input" />
         <input type="password" placeholder="Password" class="login-input" />
-        <button type="submit" class="login-button">Sign In</button>
+        <button type="submit" class="login-button">Log In</button>
       </form>
     </div>
   </div>
@@ -24,7 +24,6 @@ export default {
   align-items: center;
   height: 100vh; 
   width: 100%;
-  background-color: #fff;
 }
 
 .login-box {
