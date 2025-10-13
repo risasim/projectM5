@@ -78,9 +78,10 @@ func (inf Infected) finished() bool {
 
 // Session does hold the common
 type Session struct {
-	player  []Player
-	status  GameStatus
-	hitData []communication.HitData
+	player   []Player
+	status   GameStatus
+	hitData  []communication.HitData
+	GameType communication.GameType
 }
 
 // GameStatus is an enumaration of possible game statuses

@@ -10,6 +10,8 @@ import (
 // StartedMessage is message that should be sent at the start of each game
 type StartedMessage struct {
 	At time.Time `json:"at"`
+	// Active is flag to determine if the pi is active or waits for activation
+	Active bool `json:"active"`
 }
 
 // EndedMessage is message sent after the end of the game to all players
@@ -20,7 +22,7 @@ type EndedMessage struct {
 // HitResponse is what will be sent from server to pi after hit
 type HitResponse struct {
 	// PlaySound should the pi make a sound
-	PlaySound int `json:"playSound"`
+	PlaySound bool `json:"playSound"`
 	// SoundName is the name of the file
 	SoundName string `json:"soundName"`
 	// Dead is whether the pi should still play or not
