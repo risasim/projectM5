@@ -1,6 +1,9 @@
 import lirc
 import time
 import sys
+import web
+import json
+import datetime
 
 def receiveIR():
     try:
@@ -15,7 +18,9 @@ def receiveIR():
 
                 hex = data[0] # should be the hex of the of pre_data + code of 64 bit / 16 hex so 
                               # 0x1111111122222222
-                              # 0x{pre_dat}{code} 
+                              # 0x{pre_dat}{code}
+                message = formatHit(hex)
+                web.sendMessage(message) # don't know if it is correctly typed
     except lirc.error.LircError:
         print("error: cant make connection to lircd")
     except Exception as e:
@@ -24,3 +29,13 @@ def receiveIR():
         if "sockid" in locals():
             lirc.deinit()
 
+
+def formatHit(hex):
+    x = {
+        "msgtype": "HitDataMsg",
+        "Data": {
+            "victim": 1, # me
+            "shooter": (hex >> 32),
+            "timestamp":  datetime.datetime.now().isoformat()
+        }
+    }
