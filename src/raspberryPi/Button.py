@@ -21,7 +21,7 @@ def checkValidPress():
     
 
     av = (sum(deltaList)/ len(deltaList));
-    if ( av < 500):
+    if (av < 500):
         Gunled.changecolor("RED")
         return False
     elif (av < 1000):
