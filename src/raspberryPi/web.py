@@ -13,7 +13,8 @@ async def createConnection(ip):
 
 
 async def processOnReception(message):
-    json.load(message)
+    received = json.load(message)
+    
     print(message)
 
 
