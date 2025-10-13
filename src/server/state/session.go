@@ -2,7 +2,6 @@ package state
 
 import (
 	"github.com/risasim/projectM5/project/src/server/communication"
-	"time"
 )
 
 // GameMode does prescribe functions that all of the GameModes share
@@ -13,16 +12,6 @@ type GameMode interface {
 	generateData()
 	// finished is the function to determine if any GameMode is finished
 	finished() bool
-}
-
-// Hit does store data passed from the pi about a hit
-type Hit struct {
-	// victim is the id of the Player who is sending the data about being shot
-	victim int
-	// shooter is the id of the Player who has sent the IR signal and hit the receiver
-	shooter int
-	// timeStamp of the shot being registered
-	timeStamp time.Time
 }
 
 // FreeForAll is a game mode where the players are competing against each other, without reviving
@@ -91,7 +80,7 @@ func (inf Infected) finished() bool {
 type Session struct {
 	player  []Player
 	status  GameStatus
-	hitData []Hit
+	hitData []communication.HitData
 }
 
 // GameStatus is an enumaration of possible game statuses
