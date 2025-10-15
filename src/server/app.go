@@ -7,8 +7,10 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/gorilla/websocket"
 	_ "github.com/lib/pq"
 	"github.com/risasim/projectM5/project/src/server/db"
+	"github.com/risasim/projectM5/project/src/server/state"
 	"log"
 	"os"
 )
@@ -44,8 +46,10 @@ func getEnv(key, fallback string) string {
 
 // App holds the db and the gameManager in one structure
 type App struct {
-	DB     *sql.DB
-	Routes *gin.Engine
+	DB          *sql.DB
+	Routes      *gin.Engine
+	GameManager *state.GameManager
+	upgrader    websocket.Upgrader
 }
 
 // CreateConnection opens the connection with the db via the .env values
@@ -80,10 +84,30 @@ func (a *App) CreateRoutes() {
 	routes := gin.Default()
 	userController := db.NewUserController(a.DB)
 	routes.GET("/users", userController.GetUsers)
-	routes.POST("/user", userController.InsertUser)
+	routes.POST("/addUser", userController.InsertUser)
+	//routes.GET("/auth")
+	//For web
+	//routes.POST("/music")
+	//routes.GET("/gameStatus")
+	//routes.POST("/startGame")
+	//Ending the game ?
+	//routes.POST("/gameStatus")
+	//routes.DELETE("/user")
+	//routes.POSt("joinGame")
+	// For pi
+	//routes.GET("/music")
+	//routes.GET("/hit")
+
+	//routes.GET("/wsLeaderboard")
+	//routes.GET("/wsPis")
 	a.Routes = routes
+	a.upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
 }
 
-func (a *App) Run() {
+func (a *App) Run(gm *state.GameManager) {
+	a.GameManager = gm
 	a.Routes.Run(":8080")
 }

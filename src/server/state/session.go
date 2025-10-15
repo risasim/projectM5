@@ -87,10 +87,10 @@ func (tdm TeamDeathMatch) generateData() []string {
 // finished is the condition to determine if the TeamDeathMatch GameMode is finished
 func (tdm TeamDeathMatch) finished() bool {
 	// Checking the status of the session to determine if the game is finished
-	if tdm.session.status == idle {
-		return true
-	}
-	return false
+	//if tdm.session.status == idle {
+	//	return true
+	//}
+	//return false
 }
 
 // Team are the collaborating players,they cannot kill each other
@@ -134,26 +134,8 @@ func (inf Infected) finished() bool {
 // Session does hold the common
 type Session struct {
 	player   []Player
-	status   GameStatus
 	hitData  []communication.HitData
 	GameType communication.GameType
-}
-
-// GameStatus is an enumaration of possible game statuses
-type GameStatus int
-
-const (
-	idle GameStatus = iota
-	active
-)
-
-var statusName = map[GameStatus]string{
-	idle:   "idle",
-	active: "active",
-}
-
-func (gs GameStatus) String() string {
-	return statusName[gs]
 }
 
 // Holds basic player information
