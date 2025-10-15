@@ -25,18 +25,17 @@ body {
   overflow-x: hidden;
 }
 
-/* app-container ensures layout stability */
+
 .app-container {
   position: relative;
   min-height: 100vh;
 }
 
-/* content area below header */
 .page-content {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 90px; /* same height as header so it doesn't overlap */
+  padding-top: 90px; 
   z-index: 1;
   position: relative;
 }
