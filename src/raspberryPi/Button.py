@@ -1,8 +1,8 @@
 from gpiozero import Button
 import time
-import IRTransmitter as IRT
 import Gunled
-
+import Transmitter
+from web import alive
 
 
 
@@ -14,24 +14,27 @@ timeList = []
 
 sensor = Button(GPIO_PIN, pull_up=True)
 
-
+minimum = 1000000000
 
 def checkValidPress():
+    
+    if not alive:
+        return "RED"
+    
     deltaList = []
     for i in range(0, len(timeList)):
         j = i + 1
         if (j >= len(timeList)):
             break
+        print("-------------------")
+        print(timeList[j])
         deltaList.append(timeList[j] - timeList[i])
     
 
-    av = (sum(deltaList)/ len(deltaList))
-    if ( av < 500):
+    av = (sum(deltaList)/ len(deltaList)) if not len(deltaList) == 0  else minimum + 1
+    if ( av < minimum):
         Gunled.changecolor("RED")
         return "RED"
-    elif (av < 1000):
-        Gunled.changecolor("ORANGE")
-        return "ORANGE"
     else:
         Gunled.changecolor("GREEN")
         return "GREEN"
@@ -40,11 +43,11 @@ def checkValidPress():
 def buttonpress():
     if (len(timeList) >= 5):
         timeList.pop(0)
-    timeList.append(time.perf_counter_ns)
+    timeList.append(time.time_ns())
     color = checkValidPress()
     if not (color == "RED"):
         # send signal to to send IRTransmitter
-        IRT.shootwithinfo()
+        Transmitter.shootWithInfo()
         Gunled.changecolor("NONE")
         time.sleep(0.05)
         Gunled.changecolor(color)
@@ -64,6 +67,8 @@ def main():
     except KeyboardInterrupt:
         print("inturrupted")
 
+
+main()
 
 ## KY-004 Button
 ## GND (right) connect to ground on rpi.

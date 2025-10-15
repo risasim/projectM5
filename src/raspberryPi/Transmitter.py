@@ -1,0 +1,5 @@
+
+
+
+def shootWithInfo():
+    pass

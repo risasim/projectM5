@@ -107,20 +107,25 @@ import time
 
 def shootwithinfo():
 
-    REMOTE = "SENDER_" # still confused if these things 
-    KEY = "ID_SIGNAL"  
+    REMOTE = "LOCAL_SENDER_0" # still confused if these things 
+    KEY = "RPI_BROADCAST"  
 
     try:
         
-        lirc.init("rpi_sender_client")
-        lirc.send_once(REMOTE, KEY)
+        client = lirc.Client()
+        client.send_once(REMOTE, KEY)
         
         time.sleep(0.5)
     except Exception as e:
-        print(f"something went worng with sending the lirc commant {e}")
-        print("make sure lircd service is running and the configuration is correct")
-        print("check this with: sudo systemctl status lircd")
+        print(f"something went worng with sending the lirc commant: \n {e}")
     finally:
         if "sockeid" in locals():
             lirc.deinit()
         pass
+
+
+def main():
+    while (True):
+        shootwithinfo()
+
+
