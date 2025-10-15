@@ -27,55 +27,64 @@ export default {
 }
 
 .login-box {
-  background: white;
-  padding: 40px 50px;
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  width: 360px;
+  background: #ffffff;
+  border: 0.2vw solid #000000;
+  border-radius: 1.5vw;
+  padding: 2vw;
+  margin-bottom: 0;
+  box-shadow: 0 0.5vw 1vw rgba(0, 0, 0, 0.15);
+  width: 25%;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .login-title {
-  margin-bottom: 30px;
-  font-size: 32px;
+  margin-top: -1vw;
+  margin-bottom: 1.5vw;
+  font-size: 2vw;
   font-weight: 700;
-  color: #ff4b4b;
+  color: #b30000;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 1vw;
+  width: 100%; 
 }
 
 .login-input {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 16px;
+  padding: 2.6%;
+  border-radius: 0.5vw;
+  border: 0.08vw solid #ccc;
+  font-size: 1vw;
   outline: none;
   transition: 0.2s ease;
+  margin-bottom: 0.5vw; 
 }
 
 .login-input:focus {
-  border-color: #ff4b4b;
-  box-shadow: 0 0 6px rgba(255, 75, 75, 0.4);
+  border-color: #b30000;
+  box-shadow: 0 0 0.4vw rgba(255, 75, 75, 0.4);
 }
 
 .login-button {
-  background: #ff4b4b;
+  background: #b30000;
   color: white;
-  font-size: 18px;
+  font-size: 1.1vw;
   font-weight: 600;
-  padding: 12px;
+  padding: 2.6%;
   border: none;
-  border-radius: 8px;
+  border-radius: 0.5vw;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .login-button:hover {
-  background: #ff6666;
+  background: #b30000;
   transform: scale(1.03);
 }
 </style>
