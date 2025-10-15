@@ -33,7 +33,6 @@ export default {
 }
 
 
-
 .header-title {
   color: white;
   width: 350px;
