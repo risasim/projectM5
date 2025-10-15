@@ -6,7 +6,7 @@
         <p class="home-description">
         </p>
 
-        <button class="userboard-btn">Userboard</button>
+        <router-link to="/userboard"><button class="userboard-btn">Userboard</button></router-link>
 
         <div class="info-section">
           <div class="info-card">
@@ -80,7 +80,7 @@ export default {
 }
 
 .userboard-btn:hover {
-  background: #ad0000;
+  background: #e22e2e;
   color: rgb(0, 0, 0);
   transform: scale(1.05);
   border: 3px solid #000000;
@@ -96,7 +96,7 @@ export default {
 
 .info-card {
   background: #fff;
-  border: 4px solid #000000;
+  border: 3px solid #000000;
   border-radius: 14px;
   width: 280px;
   padding: 25px;
