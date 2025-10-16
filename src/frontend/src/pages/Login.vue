@@ -5,7 +5,7 @@
       <form class="login-form">
         <input type="text" placeholder="Username" class="login-input" />
         <input type="password" placeholder="Password" class="login-input" />
-        <router-link to="/"><button type="submit" class="login-button">Log In</button></router-link>
+        <router-link to="/userboard"><button type="submit" class="login-button">Log In</button></router-link>
         <router-link to="/adminboard"><button type="submit" class="login-button">Log In (admin)</button></router-link>
       </form>
     </div>
@@ -34,6 +34,7 @@ export default {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   width: 360px;
   text-align: center;
+  border: 4px solid #000000;
 }
 
 .login-title {
@@ -56,6 +57,7 @@ export default {
   font-size: 16px;
   outline: none;
   transition: 0.2s ease;
+  
 }
 
 .login-input:focus {
@@ -64,7 +66,7 @@ export default {
 }
 
 .login-button {
-  background: #ff4b4b;
+  background: #ff1111;
   color: white;
   font-size: 18px;
   font-weight: 600;
@@ -74,6 +76,7 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease;
   width: 360px;
+  border: 4px solid #000000;
 }
 
 .login-button:hover {

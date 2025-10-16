@@ -13,17 +13,17 @@
           <p class="team">Team: <span class="value team">Red (toggle)</span></p>
         </div>
 
-        <button class="leaderboard-btn">Leaderboard</button>
+        <router-link to="/leaderboard"><button class="leaderboard-btn">Leaderboard</button></router-link>
       </div>
 
       <div class="stats-section">
-        <p>Your Total Victories: <span class="value">12 (nice)</span></p>
-        <p>Total Deaths: <span class="value">37 (git gud)</span></p>
+        <p>Your Total Victories: <span class="value">12</span></p>
+        <p>Total Deaths: <span class="value">37</span></p>
       </div>
 
       <div class="sfx-section">
         <label for="deathSfx" class="sfx-label">Custom Death SFX:</label>
-        <input id="deathSfx" type="file" class="sfx-input" />
+        <input id="deathSfx" type="file"  accept=".mp3, .ogg, .wav"  class="sfx-input"  @change="handleFileUpload" />
       </div>
 
       <div class="session-status">
@@ -37,9 +37,46 @@
 
 <script>
 export default {
-  name: 'UserBoard'
+  name: 'UserBoard',
+  methods: {
+    async handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const maxSizeMB = 2;
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        alert('File size must be less than 2 MB.');
+        event.target.value = '';
+        return;
+      }
+
+      try {
+        const audioURL = URL.createObjectURL(file);
+        const audio = new Audio(audioURL);
+
+        await new Promise((resolve, reject) => {
+          audio.onloadedmetadata = () => {
+            if (audio.duration > 5) {
+              alert('Audio must be less than 5 seconds.');
+              event.target.value = '';
+              URL.revokeObjectURL(audioURL);
+              reject();
+            } else {
+              resolve();
+            }
+          };
+        });
+
+        URL.revokeObjectURL(audioURL);
+        alert('File accepted!');
+      } catch (err) {
+        console.error('Audio validation failed:', err);
+      }
+    }
+  }
 }
 </script>
+
 
 <style scoped>
 .userboard-page {
@@ -65,7 +102,6 @@ export default {
   align-items: center;
 }
 
-/* Floating Userboard title */
 .floating-userboard-title {
   position: absolute;
   top: -1.8vw;
@@ -193,6 +229,7 @@ export default {
   box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.15);
   background-color: #28a745;
   color: white;
+  border: 4px solid #000000;
 }
 
 .enter-session-btn:hover {

@@ -9,7 +9,7 @@
 
         <h1 class="adminboard-title">Game Session Settings</h1>
 
-        <button class="adminboard-btn">Leaderboard</button>
+        <router-link to="/leaderboard"><button class="adminboard-btn">Leaderboard</button></router-link>
       </div>
 
       <div class="gametype-select">
@@ -191,6 +191,7 @@
     transition: all 0.25s ease;
     border: none;
     box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.15);
+    border: 4px solid #000000;
   }
 
   .start-session {

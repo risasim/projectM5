@@ -19,7 +19,7 @@
           </div>
           <div class="info-card3">
             <h2 class="info-title">Raspberry Pi</h2>
-            <p class="info-content">We have a Raspberry Pi connected to the sensor on your vest, and to the Infared gun. Make sure to be</p>
+            <p class="info-content">We have a Raspberry Pi connected to the sensor on your vest, and to the Infared gun.</p>
           </div>
         </div>
       </div>
