@@ -3,6 +3,7 @@ import Home from '@/pages/Home.vue'
 import Login from '@/pages/Login.vue'
 import Userboard from '@/pages/Userboard.vue'
 import Adminboard from '@/pages/Adminboard.vue'
+import Leaderboard from '@/pages/Leaderboard.vue'
 
 
 const routes = [
@@ -28,7 +29,12 @@ const routes = [
     path: '/adminboard',
     name: 'AdminBoard',
     component: Adminboard
+  },
+  {
 
+    path: '/leaderboard',
+    name: 'Leaderboard',
+    component: Leaderboard
   }
 ]
 

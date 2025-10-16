@@ -15,14 +15,11 @@ export default {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: -1; /* ensures it's always behind everything */
+  z-index: -1;
   overflow: hidden;
   background-color: rgb(80, 4, 4);
 
-  /* cool laser grid pattern */
-  
-
-  
+  /* cool laser background no longer neon jus red :( */
   background-image:
     repeating-linear-gradient(50deg,transparent,transparent 80px,rgb(152, 8, 8) 80px,rgba(255, 0, 0, 0.5) 82px,transparent 82px),
     repeating-linear-gradient(60deg, transparent, transparent 80px, rgba(243, 38, 38, 0.167) 80px, rgba(255, 0, 0, 0.15) 160px),

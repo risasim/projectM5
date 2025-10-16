@@ -5,7 +5,7 @@
       <form class="login-form">
         <input type="text" placeholder="Username" class="login-input" />
         <input type="password" placeholder="Password" class="login-input" />
-        <router-link to="/"><button type="submit" class="login-button">Log In</button></router-link>
+        <router-link to="/userboard"><button type="submit" class="login-button">Log In</button></router-link>
         <router-link to="/adminboard"><button type="submit" class="login-button">Log In (admin)</button></router-link>
       </form>
     </div>
@@ -40,6 +40,8 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  border: 4px solid #000000;
+
 }
 
 .login-title {
@@ -74,6 +76,7 @@ export default {
 
 .login-button {
   background: #b30000;
+  background: #ff1111;
   color: white;
   font-size: 1.1vw;
   font-weight: 600;
@@ -84,6 +87,7 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease;
   width: 360px;
+  border: 4px solid #000000;
 }
 
 .login-button:hover {
