@@ -17,6 +17,8 @@
         <select id="gametype" class="adminboard-select">
           <option value="v">FreeFall</option>
           <option value="t">Infected</option>
+          <option value="t">Team Deathmatch</option>
+
         </select>
       </div>
 

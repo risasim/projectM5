@@ -22,7 +22,9 @@ const routes = [
     name: 'AppUserboard',
     component: Userboard
     },
-    {
+    
+  {
+
     path: '/adminboard',
     name: 'AdminBoard',
     component: Adminboard

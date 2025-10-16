@@ -5,7 +5,8 @@
       <form class="login-form">
         <input type="text" placeholder="Username" class="login-input" />
         <input type="password" placeholder="Password" class="login-input" />
-        <button type="submit" class="login-button">Log In</button>
+        <router-link to="/"><button type="submit" class="login-button">Log In</button></router-link>
+        <router-link to="/adminboard"><button type="submit" class="login-button">Log In (admin)</button></router-link>
       </form>
     </div>
   </div>
@@ -79,8 +80,10 @@ export default {
   padding: 2.6%;
   border: none;
   border-radius: 0.5vw;
+
   cursor: pointer;
   transition: all 0.2s ease;
+  width: 360px;
 }
 
 .login-button:hover {
