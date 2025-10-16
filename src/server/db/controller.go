@@ -2,9 +2,9 @@ package db
 
 import (
 	"database/sql"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/risasim/projectM5/project/src/server/auth"
 	"github.com/risasim/projectM5/project/src/server/db/model"
 )
 
@@ -22,7 +22,7 @@ func (u UserController) InsertUser(g *gin.Context) {
 	db := u.db
 	var user model.PostUser
 	if err := g.ShouldBindJSON(&user); err == nil {
-		hash, _ := auth.HashPassword(user.Password)
+		hash, _ := HashPassword(user.Password)
 		user.Password = hash
 		usersRepo := NewUsersRepository(db)
 		apiKey := uuid.New().String()
