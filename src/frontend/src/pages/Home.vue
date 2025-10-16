@@ -9,17 +9,17 @@
         <router-link to="/userboard"><button class="userboard-btn">Userboard</button></router-link>
 
         <div class="info-section">
-          <div class="info-card">
+          <div class="info-card1">
             <h2 class="info-title">Gamemodes</h2>
-            <p class="info-content">some info</p>
+            <p class="info-content">We have several gamemodes you can play in such as Free-For-All, Infected and Team Deathmatch.</p>
           </div>
-          <div class="info-card">
-            <h2 class="info-title">How It Works</h2>
-            <p class="info-content">some info </p>
+          <div class="info-card2">
+            <h1 class="info-title">Welcome to PhoSho</h1>
+            <p class="info-content">PhoSho is a laser-tag game brought to you by Group 29! It works with Infared Lasers so it is completely safe to play with. Shoot those photons and gain those points on your profile! Hope you have fun!</p>
           </div>
-          <div class="info-card">
+          <div class="info-card3">
             <h2 class="info-title">Raspberry Pi</h2>
-            <p class="info-content">pie</p>
+            <p class="info-content">We have a Raspberry Pi connected to the sensor on your vest, and to the Infared gun. Make sure to be</p>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ export default {
   margin-top: 50px;
 }
 
-.info-card {
+.info-card1 {
   background: #fff;
   border: 3px solid #000000;
   border-radius: 14px;
@@ -102,6 +102,26 @@ export default {
   padding: 25px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
   transition: 0.3s ease;
+
+}
+.info-card2 {
+  background: #fff;
+  border: 3px solid #000000;
+  border-radius: 14px;
+  width: 280px;
+  padding: 25px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+  transition: 0.3s ease;
+}
+.info-card3 {
+  background: #fff;
+  border: 3px solid #000000;
+  border-radius: 14px;
+  width: 280px;
+  padding: 25px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+  transition: 0.3s ease;
+
 }
 
 .info-card:hover {
@@ -111,7 +131,7 @@ export default {
   /*font-family: 'Trebuchet MS', Arial, sans-serif;*/
 .info-title {
   color: #b30000;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 700;
   font-family: 'Trebuchet MS', Arial, sans-serif;
   margin-bottom: 10px;

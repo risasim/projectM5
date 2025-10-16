@@ -1,145 +1,207 @@
 <template>
-  <div class="userboard-container">
-    <div class="userboard">
-      <!-- Header -->
-      <div class="userboard-header">
-        <h2>Userboard</h2>
+  <div class="userboard-page">
+    <div class="userboard-container">
+
+
+      <div class="floating-userboard-title">
+        <h1>Userboard</h1>
       </div>
 
-      <!-- Main content area -->
-      <div class="userboard-content">
+      <div class="userboard-top">
         <div class="user-info">
-
-          <span class="label">Username:</span>
+          <h2 class="username">Username: <span class="value">Berk</span></h2>
+          <p class="team">Team: <span class="value team">Red (toggle)</span></p>
         </div>
 
-        <div class="user-sfx">
-          <span class="label">Custom Death SFX: </span>
-          <button class="insert-btn">Insert</button>
-        </div>
-
-        <div class="session-info">
-          <div class="session-status">
-            <span class="label">Session status: </span>
-            <span class="value">Waiting for players</span>
-          </div>
-        </div>
-
-        <div class="session-btn">
-          <button class="enter-btn">Enter current game session</button>
-        </div>
+        <button class="leaderboard-btn">Leaderboard</button>
       </div>
+
+      <div class="stats-section">
+        <p>Your Total Victories: <span class="value">12 (nice)</span></p>
+        <p>Total Deaths: <span class="value">37 (git gud)</span></p>
+      </div>
+
+      <div class="sfx-section">
+        <label for="deathSfx" class="sfx-label">Custom Death SFX:</label>
+        <input id="deathSfx" type="file" class="sfx-input" />
+      </div>
+
+      <div class="session-status">
+        <p>Session status: <span class="status active">Waiting for players</span></p>
+      </div>
+
+      <button class="enter-session-btn">Enter current game session</button>
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: "Userboard"
-};
+  name: 'UserBoard'
+}
 </script>
 
 <style scoped>
-.userboard-container {
+.userboard-page {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: transparent;
+  height: 100vh; 
+  width: 100%;
+  background: none;
 }
 
-.userboard {
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid black;
-  border-radius: 8px;
-  width: 1200px;
-  height: 500px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+.userboard-container {
+  position: relative;
+  width: 55%;
+  max-width: 800px;
+  background: #fff;
+  border: 0.25vw solid #000;
+  border-radius: 1vw;
+  padding: 2.5vw 2vw;
+  box-shadow: 0 0.8vw 1.5vw rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.userboard-header {
-  background: white;
-  border: 2px solid black;
-  border-radius: 6px 6px 0 0;
-  padding: 8px 24px;
-  margin-top: 24px;
-  z-index: 2;
+/* Floating Userboard title */
+.floating-userboard-title {
+  position: absolute;
+  top: -1.8vw;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 0.25vw solid #000;
+  border-radius: 0.5vw;
+  padding: 0.4vw 1.2vw;
+  box-shadow: 0 0.4vw 1vw rgba(0, 0, 0, 0.25);
 }
 
-.userboard-header h2 {
-  margin: 2;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: black;
+.floating-userboard-title h1 {
+  margin: 0;
+  font-size: 1.6vw;
+  font-weight: 700;
+  text-align: center;
 }
 
-.userboard-content {
+.userboard-top {
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-  padding: 2rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2vw;
+}
+
+.user-info {
+  text-align: left;
+}
+
+.username, .team {
+  font-size: 1.5vw;
+  margin: 0.2vw 0;
+}
+
+.userboard-title {
+  font-size: 1.8vw;
+  font-weight: 700;
+  text-align: center;
+}
+
+.leaderboard-btn {
+  background-color: #ffffff;
+  border: 0.15vw solid #000;
+  color: black;
+  font-weight: 600;
+  padding: 0.6vw 1.2vw;
+  border-radius: 0.5vw;
+  cursor: pointer;
+  font-size: 1vw;
+  transition: all 0.25s ease;
+  box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.1);
+}
+
+.leaderboard-btn:hover {
+  background-color: #f2f2f2;
+  transform: translateY(-0.1vw);
+}
+
+.stats-section {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 1.5vw;
+  font-size: 1.3vw;
+}
+
+.stats-section .value {
+  font-weight: 600;
+}
+
+.sfx-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5vw;
   width: 100%;
 }
 
-.user-info{
-    margin-left: 2%;
-    font-size: x-large;
+.sfx-label {
+  font-size: 1.1vw;
+  margin-right: 1vw;
 }
 
-.session-info{
-margin-left: 38.4%;
-}
-
-.session-btn {
-  display: flex;
-  justify-content: space-between;
-  align-items: right;
-margin-left: 40%;
-}
-
-.user-sfx{
-margin-top: 9%;
-margin-left: 2%;
-
-}
-
-.label {
-  font-weight: bold;
-  
-  color: #111;
-}
-
-.value {
-  color: #333;
-}
-
-.insert-btn {
-  background: #ddd;
-  padding: 0.5% 4%;
-  border-radius: 4px;
+.sfx-input {
+  border: 0.15vw solid #000;
+  padding: 0.4vw;
+  border-radius: 0.3vw;
   cursor: pointer;
+}
+
+.session-status {
+  margin-bottom: 1.5vw;
+  font-size: 1.1vw;
+}
+
+.status {
   font-weight: 600;
-  transition: 0.2s;
 }
 
-.insert-btn:hover {
-  background: #bbb;
+.status.active {
+  color: green;
 }
 
-.enter-btn {
-  border: 2px solid black;
-  background: transparent;
-  padding: 10px 16px;
-  font-weight: 700;
+.status.waiting {
+  color: orange;
+}
+
+.status.inactive {
+  color: red;
+}
+
+.value.team{
+  color: red;
+  font: bolder;
+}
+
+.enter-session-btn {
+  font-weight: 600;
+  font-size: 1vw;
+  border-radius: 0.5vw;
+  padding: 0.8vw 1.8vw;
   cursor: pointer;
   transition: all 0.25s ease;
+  border: none;
+  box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.15);
+  background-color: #28a745;
+  color: white;
 }
 
-.enter-btn:hover {
-  background: black;
-  color: white;
+.enter-session-btn:hover {
+  background-color: #218838;
+  transform: translateY(-0.2vw);
+}
+
+.enter-session-btn:active { 
+  transform: translateY(0); 
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); 
 }
 </style>
