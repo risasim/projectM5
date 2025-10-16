@@ -91,6 +91,7 @@ func (tdm TeamDeathMatch) finished() bool {
 	//	return true
 	//}
 	//return false
+	return false
 }
 
 // Team are the collaborating players,they cannot kill each other

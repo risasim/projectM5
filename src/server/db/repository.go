@@ -9,7 +9,7 @@ import (
 type UserRepositoryInterface interface {
 	SelectUsers() []model.GetUserResponse
 	InsertUser(user model.PostUser, apiKey string, isAdmin bool) bool
-	GetUser() model.GetUserAuth
+	GetUser(username string) (*model.GetUserAuth, error)
 }
 
 // UsersRepository does execute the sql calls on the db
@@ -62,6 +62,22 @@ func (u UsersRepository) InsertUser(user model.PostUser, apiKey string, isAdmin 
 	return true
 }
 
-func (u UsersRepository) GetUser() model.GetUserAuth {
-	panic("implement me")
+func (u UsersRepository) GetUser(username string) (*model.GetUserAuth, error) {
+	var user model.GetUserAuth
+	err := u.db.QueryRow("SELECT * FROM users WHERE username = $1 ", username).Scan(
+		&user.ID,
+		&user.IsAdmin,
+		&user.Username,
+		&user.Password,
+		&user.PiSN,
+		&user.ApiKey,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // no user found
+		}
+		log.Println("GetUser error:", err)
+		return nil, err
+	}
+	return &user, nil
 }
