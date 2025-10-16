@@ -7,9 +7,10 @@
           <button class="adminboard-btn">Manage players</button>
         </div>
 
+        <h1 class="adminboard-title">Game Session Settings</h1>
+
         <router-link to="/leaderboard"><button class="adminboard-btn">Leaderboard</button></router-link>
 
-        <button class="adminboard-btn">Leaderboard</button>
       </div>
 
       <div class="gametype-select">
