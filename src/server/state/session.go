@@ -1,6 +1,8 @@
 package state
 
 import (
+	"sort"
+
 	"github.com/risasim/projectM5/project/src/server/communication"
 )
 
@@ -9,7 +11,7 @@ type GameMode interface {
 	// registerHit() is a function to respond to getting a hit alert from the infrared receiver
 	registerHit() communication.HitResponse
 	// generateData is a function to generate the leaderboard data
-	generateData()
+	generateData() any
 	// finished is the function to determine if any GameMode is finished
 	finished() bool
 }
@@ -22,8 +24,31 @@ type FreeForAll struct {
 	session Session
 }
 
-func (ffl FreeForAll) registerHit() {
+func (ffl FreeForAll) registerHit() communication.HitResponse {
+	//TODO implement me
+	panic("implement me")
+}
 
+// generateDate Ensures everyone is in the dead poeple array and then reverses it for the leaderboard
+func (ffl FreeForAll) generateData() []Player {
+	if len(ffl.deadPeople) != len(ffl.session.player) {
+		for _, player := range ffl.session.player {
+			found := false
+			for _, deadPlayer := range ffl.deadPeople {
+				if deadPlayer.id == player.id {
+					found = true
+					break
+				}
+			}
+			if !found {
+				ffl.deadPeople = append(ffl.deadPeople, player)
+			}
+		}
+	}
+	for i, j := 0, len(ffl.deadPeople)-1; i < j; i, j = i+1, j-1 {
+		ffl.deadPeople[i], ffl.deadPeople[j] = ffl.deadPeople[j], ffl.deadPeople[i]
+	}
+	return ffl.deadPeople
 }
 
 // finished returns true if the array length of dead people matches the array length of the player array in the session
@@ -40,6 +65,23 @@ type TeamDeathMatch struct {
 	teams []Team
 	// session that is the GameMode played in
 	session Session
+}
+
+func (tdm TeamDeathMatch) registerHit() communication.HitResponse {
+	//TODO implement me
+	panic("implement me")
+}
+
+// generateData sorts teams by score and returns team names in order
+func (tdm TeamDeathMatch) generateData() []string {
+	sort.Slice(tdm.teams, func(i, j int) bool {
+		return tdm.teams[i].score > tdm.teams[j].score
+	})
+	var teamOrderedName []string
+	for _, team := range tdm.teams {
+		teamOrderedName = append(teamOrderedName, team.name)
+	}
+	return teamOrderedName
 }
 
 // finished is the condition to determine if the TeamDeathMatch GameMode is finished
@@ -69,6 +111,19 @@ type Infected struct {
 	infectedPeople []Player
 	// session that is the GameMode played in
 	session Session
+}
+
+func (inf Infected) registerHit() communication.HitResponse {
+	//TODO implement me
+	panic("implement me")
+}
+
+// generateData returns reversed list of infected people as people are added as they get infected
+func (inf Infected) generateData() []Player {
+	for i, j := 0, len(inf.infectedPeople)-1; i < j; i, j = i+1, j-1 {
+		inf.infectedPeople[i], inf.infectedPeople[j] = inf.infectedPeople[j], inf.infectedPeople[i]
+	}
+	return inf.infectedPeople
 }
 
 // finished returns true if the array length of infected people matches the array length of the player array in the session
