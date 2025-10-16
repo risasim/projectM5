@@ -7,17 +7,22 @@
           <button class="adminboard-btn">Manage players</button>
         </div>
 
-        <h1 class="adminboard-title">Game Session Settings</h1>
-
         <router-link to="/leaderboard"><button class="adminboard-btn">Leaderboard</button></router-link>
+
+        <button class="adminboard-btn">Leaderboard</button>
       </div>
 
       <div class="gametype-select">
         <label for="gametype">Choose gametype:</label>
-        <select id="gametype" class="adminboard-select">
-          <option value="v">FreeFall</option>
-          <option value="t">Infected</option>
-          <option value="t">Team Deathmatch</option>
+        <select
+          id="gametype"
+          class="adminboard-select"
+          v-model="gameMode"
+          @change="handleGameModeChange"
+        >
+          <option value="FreeFall">FreeFall</option>
+          <option value="Infected">Infected</option>
+          <option value="Team Deathmatch">Team Deathmatch</option>
         </select>
       </div>
 
@@ -47,26 +52,86 @@
       </table>
 
       <div class="session-buttons">
-        <button class="start-session">Start session</button>
-        <button class="end-session">End session</button>
+        <button class="start-session" @click="startGameSession">Start session</button>
+        <button class="end-session" @click="endGameSession">End session</button>
+      </div>
+
+      <div v-if="message" class="message-box">
+        {{ message }}
       </div>
     </div>
+
+    <teleport to="body">
+      <div v-if="showPopup" class="popup-global">
+        {{ popupMessage }}
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script>
   export default {
-    name: 'AdminBoard'
-  }
+    name: 'AdminBoard',
+    data(){
+      return{
+      message: "",
+      popupMessage: "",
+      showPopup: false,
+      gameMode: 'FreeFall',
+      timer: null
+      }
+    },
+
+    methods: {
+      startGameSession(){
+        this.message = 'Session has started.'
+      },
+      endGameSession(){
+        this.message = 'Session has ended.'
+      },
+      handleGameModeChange(event) {
+        const mode = event.target.value;
+        this.popupMessage = `Game mode changed to ${mode}`;
+        this.showPopup = true;
+        console.log("popup created");
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+          this.showPopup = false;
+        }, 3000);
+      }
+    },
+    beforeUnmount() {
+      clearTimeout(this.timer);
+    }
+  };
 </script>
 
-<style scoped>.adminboard-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh; 
-  width: 100%;
-  background: none;
+<style>
+  .popup-global {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ff0000;
+    color: white;
+    padding: 14px 30px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 18px;
+    z-index: 999999;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    animation: 3s ease;
+  }
+</style>
+
+<style scoped>
+  .adminboard-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; 
+    width: 100%;
+    background: none;
   }
 
   .adminboard-container {
@@ -81,6 +146,10 @@
     flex-direction: column;
     justify-content: center;  
     align-items: center;      
+  }
+
+  .gametype-select {
+    margin-bottom: 2rem;
   }
 
   .top-buttons {
@@ -191,7 +260,6 @@
     transition: all 0.25s ease;
     border: none;
     box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.15);
-    border: 4px solid #000000;
   }
 
   .start-session {
@@ -222,5 +290,13 @@
   .end-session:active { 
     transform: translateY(0); 
     box-shadow: 0 3px 6px rgba(81, 7, 7, 0.15); 
+  }
+
+  .message-box {
+    margin-top: 1vh;
+    padding: 1.2vh 2vw;
+    font-weight: 600;
+    text-align: center;
+    font-size: 1vw;
   }
 </style>
