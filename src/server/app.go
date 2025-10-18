@@ -9,6 +9,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/websocket"
 	_ "github.com/lib/pq"
+	"github.com/risasim/projectM5/project/src/server/auth"
 	"github.com/risasim/projectM5/project/src/server/db"
 	"github.com/risasim/projectM5/project/src/server/state"
 	"log"
@@ -23,6 +24,7 @@ type config struct {
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
+	JWTSecret  string
 }
 
 // LoadConfig does load the data from the .env file
@@ -34,6 +36,7 @@ func loadConfig() *config {
 		DBPassword: getEnv("POSTGRES_PASSWORD", ""),
 		DBName:     getEnv("POSTGRES_DB", "mydb"),
 		DBSSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
+		JWTSecret:  getEnv("JWT_SECRET", "jwt_secret"),
 	}
 }
 
@@ -46,10 +49,11 @@ func getEnv(key, fallback string) string {
 
 // App holds the db and the gameManager in one structure
 type App struct {
-	DB          *sql.DB
-	Routes      *gin.Engine
-	GameManager *state.GameManager
-	upgrader    websocket.Upgrader
+	DB           *sql.DB
+	Routes       *gin.Engine
+	GameManager  *state.GameManager
+	upgrader     websocket.Upgrader
+	loginHandler *auth.LoginHandler
 }
 
 // CreateConnection opens the connection with the db via the .env values
@@ -61,6 +65,13 @@ func (a *App) CreateConnection() {
 		log.Fatal(err)
 	}
 	a.DB = db
+}
+
+// SetupLogin sets up the login handler
+func (a *App) SetupLogin() {
+	var config *config = loadConfig()
+	repo := db.NewUsersRepository(a.DB)
+	a.loginHandler = auth.NewLoginHandler(repo, []byte(config.JWTSecret), "60")
 }
 
 // Migrate does runs the migrations in the db/migrations folder
@@ -85,7 +96,7 @@ func (a *App) CreateRoutes() {
 	userController := db.NewUserController(a.DB)
 	routes.GET("/users", userController.GetUsers)
 	routes.POST("/addUser", userController.InsertUser)
-	//routes.GET("/auth")
+	routes.GET("/auth", a.loginHandler.Login)
 	//For web
 	//routes.POST("/music")
 	//routes.GET("/gameStatus")

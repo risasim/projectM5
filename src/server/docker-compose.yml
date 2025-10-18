@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   api:
-    image: richiesimonik/mod5server:latest
+    build: .
     container_name: api_dockerizing
     ports:
       - 8080:8080

@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"time"
@@ -17,12 +17,12 @@ type Credentials struct {
 }
 
 type LoginHandler struct {
-	userRepository db.UsersRepository
+	userRepository db.UserRepositoryInterface
 	secretKey      []byte
 	timeoutStr     string
 }
 
-func newLoginHandler(repo db.UsersRepository, secretKey []byte, timeoutStr string) *LoginHandler {
+func NewLoginHandler(repo db.UserRepositoryInterface, secretKey []byte, timeoutStr string) *LoginHandler {
 	return &LoginHandler{
 		userRepository: repo,
 		secretKey:      secretKey,
@@ -30,31 +30,31 @@ func newLoginHandler(repo db.UsersRepository, secretKey []byte, timeoutStr strin
 	}
 }
 
-func (h *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *LoginHandler) Login(ctx *gin.Context) {
 	var credentials Credentials
-	err := json.NewDecoder(r.Body).Decode(&credentials)
+	err := ctx.ShouldBindJSON(&credentials)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
 		return
 	}
 
 	user, err := h.userRepository.GetUser(credentials.Username)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
 
 	if !db.VerifyPassword(credentials.Password, user.Password) {
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
 
 	tokenString, err := h.createToken(user.Username, user.IsAdmin)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "opsie"})
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+	ctx.JSON(http.StatusOK, gin.H{"token": tokenString})
 }
 
 func (h *LoginHandler) createToken(username string, isAdmin bool) (string, error) {

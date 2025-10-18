@@ -5,4 +5,5 @@ CREATE TABLE IF NOT EXISTS users (
     isAdmin BOOLEAN DEFAULT FALSE,
     pi_SN VARCHAR(255),
     api_key VARCHAR(255)
+    deathSound VARCHAR(255),
     );

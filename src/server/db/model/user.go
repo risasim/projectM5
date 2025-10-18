@@ -20,6 +20,8 @@ type GetUserAuth struct {
 	IsAdmin bool
 	// Password of the user
 	Password string
+	// DeathSound is the link to the file with the death sound
+	DeathSound string
 	// ApiKey generated for the user
 	ApiKey string
 	// PiSN is the serial number of Pi

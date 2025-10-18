@@ -69,6 +69,7 @@ func (u UsersRepository) GetUser(username string) (*model.GetUserAuth, error) {
 		&user.IsAdmin,
 		&user.Username,
 		&user.Password,
+		&user.DeathSound,
 		&user.PiSN,
 		&user.ApiKey,
 	)
