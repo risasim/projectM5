@@ -14,6 +14,7 @@ import (
 	"github.com/risasim/projectM5/project/src/server/state"
 	"log"
 	"os"
+	"time"
 )
 
 // config does load all the configuration details from the .env file
@@ -60,10 +61,36 @@ type App struct {
 func (a *App) CreateConnection() {
 	var config *config = loadConfig()
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", config.DBUser, config.DBPassword, config.DBHost, config.DBPort, config.DBName, config.DBSSLMode)
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
+
+	// Retry connection with exponential backoff
+	var db *sql.DB
+	var err error
+	maxRetries := 10
+
+	for i := 0; i < maxRetries; i++ {
+		db, err = sql.Open("postgres", connStr)
+		if err != nil {
+			log.Printf("Failed to open database connection (attempt %d/%d): %v", i+1, maxRetries, err)
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		// Test the connection
+		if err = db.Ping(); err != nil {
+			log.Printf("Failed to ping database (attempt %d/%d): %v", i+1, maxRetries, err)
+			db.Close()
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		log.Println("Database connection established successfully")
+		break
 	}
+
+	if err != nil {
+		log.Fatal("Failed to connect to database after all retries:", err)
+	}
+
 	a.DB = db
 }
 
@@ -81,7 +108,7 @@ func (a *App) Migrate() {
 		log.Println(err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file:/./db/migrations",
+		"file://db/migrations",
 		"postgres", driver)
 	if err != nil {
 		log.Fatal(err)
@@ -96,7 +123,7 @@ func (a *App) CreateRoutes() {
 	userController := db.NewUserController(a.DB)
 	routes.GET("/users", userController.GetUsers)
 	routes.POST("/addUser", userController.InsertUser)
-	routes.GET("/auth", a.loginHandler.Login)
+	routes.POST("/auth", a.loginHandler.Login)
 	//For web
 	//routes.POST("/music")
 	//routes.GET("/gameStatus")

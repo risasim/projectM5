@@ -19,6 +19,8 @@ FROM alpine:latest
 WORKDIR /root/
 # Copy the built binary from the builder stage
 COPY --from=builder /app/main .
+# Copy migration files to the container
+COPY --from=builder /app/db/migrations ./db/migrations
 
 # Expose the application port
 EXPOSE 8080
