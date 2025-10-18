@@ -49,12 +49,12 @@ func (u UsersRepository) SelectUsers() []model.GetUserResponse {
 
 // InsertUser does insert the user into the postgressql database, it need the apiKey and piSN to be gene
 func (u UsersRepository) InsertUser(user model.PostUser, apiKey string, isAdmin bool) bool {
-	stmt, err := u.db.Prepare("INSERT INTO users (isAdmin,username, password, api_key,pi_SN) VALUES ($1, $2, $3, $4, $5)")
+	stmt, err := u.db.Prepare("INSERT INTO users (isAdmin,username, password,deathSound, api_key,pi_SN) VALUES ($1, $2, $3, $4, $5,$6)")
 	if err != nil {
 		log.Println(err)
 	}
 	defer stmt.Close()
-	_, err2 := stmt.Exec(isAdmin, user.Username, user.Password, apiKey, user.PiSN)
+	_, err2 := stmt.Exec(isAdmin, user.Username, user.Password, user.DeathSound, apiKey, user.PiSN)
 	if err2 != nil {
 		log.Println(err2)
 		return false

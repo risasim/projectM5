@@ -1,5 +1,7 @@
 package model
 
+import "database/sql"
+
 // GetUser represents the sql model of the user in db
 type GetUserResponse struct {
 	// ID unique user id
@@ -14,18 +16,18 @@ type GetUserResponse struct {
 type GetUserAuth struct {
 	// ID unique user id
 	ID uint
-	// Username of the user
-	Username string
 	// IsAdmin is a flag if the user is admin
 	IsAdmin bool
+	// Username of the user
+	Username string
 	// Password of the user
 	Password string
 	// DeathSound is the link to the file with the death sound
-	DeathSound string
+	DeathSound sql.NullString
 	// ApiKey generated for the user
-	ApiKey string
+	ApiKey sql.NullString
 	// PiSN is the serial number of Pi
-	PiSN string
+	PiSN sql.NullString
 }
 
 // PostUser is a struct for the create request adding new user
@@ -36,6 +38,8 @@ type PostUser struct {
 	IsAdmin bool `json:"isAdmin"`
 	// Password of the user
 	Password string `json:"password"`
+	// DeathSound is the anme of the file for deaths
+	DeathSound string `json:"deathSound"`
 	// PiSN is the serial number of Pi
 	PiSN string `json:"piSN"`
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -73,7 +74,7 @@ func (h *LoginHandler) createToken(username string, isAdmin bool) (string, error
 	return token.SignedString(h.secretKey)
 }
 
-func (h *LoginHandler) verifyToken(tokenString string) error {
+func (h *LoginHandler) VerifyToken(tokenString string) error {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return h.secretKey, nil
 	})
@@ -84,4 +85,26 @@ func (h *LoginHandler) verifyToken(tokenString string) error {
 		return fmt.Errorf("Invalid token")
 	}
 	return nil
+}
+
+func (h *LoginHandler) AuthenticationMiddleware(c *gin.Context) {
+	// Extract the token from the Authorization header
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
+		return
+	}
+
+	// Split the header to get the token part
+	tokenString := strings.Split(authHeader, "Bearer ")[1]
+
+	err := h.VerifyToken(tokenString)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	// Token is valid, proceed with the request
+	c.Next()
 }

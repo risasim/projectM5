@@ -118,23 +118,32 @@ func (a *App) Migrate() {
 	}
 }
 
+func (a *App) InitDatabase() {
+	a.CreateConnection()
+	a.Migrate()
+	db.SeedAdmin(a.DB)
+}
+
 func (a *App) CreateRoutes() {
 	routes := gin.Default()
-	userController := db.NewUserController(a.DB)
-	routes.GET("/users", userController.GetUsers)
-	routes.POST("/addUser", userController.InsertUser)
 	routes.POST("/auth", a.loginHandler.Login)
+	userController := db.NewUserController(a.DB)
+
+	protected := routes.Group("/api")
+	protected.Use(a.loginHandler.AuthenticationMiddleware)
+
+	protected.GET("/users", userController.GetUsers)
+	protected.POST("/addUser", userController.InsertUser)
 	//For web
-	//routes.POST("/music")
-	//routes.GET("/gameStatus")
-	//routes.POST("/startGame")
+	//protected.POST("/music")
+	//protected.GET("/gameStatus")
+	//protected.POST("/startGame")
 	//Ending the game ?
-	//routes.POST("/gameStatus")
-	//routes.DELETE("/user")
-	//routes.POSt("joinGame")
+	//protected.POST("/gameStatus")
+	//protected.DELETE("/user")
+	//protected.POSt("joinGame")
 	// For pi
-	//routes.GET("/music")
-	//routes.GET("/hit")
+	//protected.GET("/music")
 
 	//routes.GET("/wsLeaderboard")
 	//routes.GET("/wsPis")

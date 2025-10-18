@@ -18,7 +18,6 @@ type UserController struct {
 }
 
 func (u UserController) InsertUser(g *gin.Context) {
-	// TODO implement middleware for authentication
 	db := u.db
 	var user model.PostUser
 	if err := g.ShouldBindJSON(&user); err == nil {
