@@ -1,38 +1,39 @@
 <template>
-  <div class="userboard-page">
-    <div class="userboard-container">
+  <div class="page-container">
+    <div class="userboard-page">
+      <div class="userboard-container">
 
-
-      <div class="floating-userboard-title">
-        <h1>Userboard</h1>
-      </div>
-
-      <div class="userboard-top">
-        <div class="user-info">
-          <h2 class="username">Username: <span class="value">Berk</span></h2>
-          <p class="team">Team: <span class="value team">Red (toggle)</span></p>
+        <div class="floating-userboard-title">
+          <h1>Userboard</h1>
         </div>
 
-        <router-link to="/leaderboard"><button class="leaderboard-btn">Leaderboard</button></router-link>
-      </div>
+        <div class="userboard-top">
+          <div class="user-info">
+            <h2 class="username">Username: <span class="value">Berk</span></h2>
+            <p class="team">Team: <span class="value team">Red (toggle)</span></p>
+          </div>
 
-      <div class="stats-section">
-        <p>Your Total Victories: <span class="value">12</span></p>
-        <p>Total Deaths: <span class="value">37</span></p>
-      </div>
+          <router-link to="/leaderboard"><button class="leaderboard-btn">Leaderboard</button></router-link>
+        </div>
 
-      <div class="sfx-section">
-        <label for="deathSfx" class="sfx-label">Custom Death SFX:</label>
-        <input id="deathSfx" type="file"  accept=".mp3, .ogg, .wav"  class="sfx-input"  @change="handleFileUpload" />
-      </div>
+        <div class="stats-section">
+          <p>Your Total Victories: <span class="value">12</span></p>
+          <p>Total Deaths: <span class="value">37</span></p>
+        </div>
 
-      <div class="session-status">
-        <p>Session status: <span class="status active">Waiting for players</span></p>
-      </div>
+        <div class="sfx-section">
+          <label for="deathSfx" class="sfx-label">Custom Death SFX:</label>
+          <input id="deathSfx" type="file"  accept=".mp3, .ogg, .wav"  class="sfx-input"  @change="handleFileUpload" />
+        </div>
 
-      <button class="enter-session-btn">Enter current game session</button>
+        <div class="session-status">
+          <p>Session status: <span class="status active">Waiting for players</span></p>
+        </div>
+
+        <button class="enter-session-btn">Enter current game session</button>
+      </div>
     </div>
-  </div>
+  </div>  
 </template>
 
 <script>
@@ -77,6 +78,17 @@ export default {
 }
 </script>
 
+<style>
+.page-container {
+  position: fixed;       
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;      
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>
 
 <style scoped>
 .userboard-page {
@@ -90,6 +102,7 @@ export default {
 
 .userboard-container {
   position: relative;
+  top: 3%;
   width: 55%;
   max-width: 800px;
   background: #fff;

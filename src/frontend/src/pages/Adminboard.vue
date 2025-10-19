@@ -11,7 +11,6 @@
           <h1 class="adminboard-title">Game Session Settings</h1>
 
           <router-link to="/leaderboard"><button class="adminboard-btn">Leaderboard</button></router-link>
-          
         </div>
 
         <div class="gametype-select">
