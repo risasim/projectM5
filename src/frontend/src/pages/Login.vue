@@ -1,15 +1,17 @@
 <template>
-  <div class="login-page">
-    <div class="login-box">
-      <h1 class="login-title">Login</h1>
-      <form class="login-form">
-        <input type="text" placeholder="Username" class="login-input" />
-        <input type="password" placeholder="Password" class="login-input" />
-        <router-link to="/userboard"><button type="submit" class="login-button">Log In</button></router-link>
-        <router-link to="/adminboard"><button type="submit" class="login-button">Log In (admin)</button></router-link>
-      </form>
+  <div class="page-container">
+    <div class="login-page">
+      <div class="login-box">
+        <h1 class="login-title">Login</h1>
+        <form class="login-form">
+          <input type="text" placeholder="Username" class="login-input" />
+          <input type="password" placeholder="Password" class="login-input" />
+          <router-link to="/userboard"><button type="submit" class="login-button">Log In</button></router-link>
+          <router-link to="/adminboard"><button type="submit" class="login-button">Log In (admin)</button></router-link>
+        </form>
+      </div>
     </div>
-  </div>
+  </div>  
 </template>
 
 <script>
@@ -19,6 +21,18 @@ export default {
 </script>
 
 <style scoped>
+.page-container {
+  position: fixed;       
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;      
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .login-page {
   display: flex;
   justify-content: center;

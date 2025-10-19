@@ -3,7 +3,8 @@
     <!--<router-link to="/" class="header-title">PhoSho</router-link>-->
     <router-link to="/"> <img src="@/assets/phosho-coollogo_com.png" alt="Logo" class="header-title" /> </router-link>
 
-    <router-link to="/login" class="login-button">Log In</router-link>
+        <!-- Login button only on the home page -->
+    <router-link v-if="$route.path === '/'" to="/login" class="login-button"> Log In </router-link>
   </header>
 </template>
 
@@ -21,7 +22,6 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 0 40px;
-  
   background: linear-gradient(to right, #ff5e5e, #ffc8c8, #ff4e4e);
   box-shadow: 0 9px 19px rgb(0, 0, 0);
   font-family: 'Trebuchet MS', 'Lucida Sans', Arial;
@@ -31,8 +31,6 @@ export default {
   left: 0;
   z-index: 10; /* above background but below modals if any */
 }
-
-
 
 .header-title {
   color: white;
@@ -52,7 +50,7 @@ export default {
 }
 
 .login-button:hover {
-  background: #ff0000;
+  background: #dac3c3;
   color: white;
   transform: scale(1.05);
 }

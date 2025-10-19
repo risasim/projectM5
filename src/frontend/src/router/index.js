@@ -4,6 +4,7 @@ import Login from '@/pages/Login.vue'
 import Userboard from '@/pages/Userboard.vue'
 import Adminboard from '@/pages/Adminboard.vue'
 import Leaderboard from '@/pages/Leaderboard.vue'
+import AdminEdit from '@/pages/AdminEdit.vue'
 
 
 const routes = [
@@ -34,6 +35,11 @@ const routes = [
     path: '/leaderboard',
     name: 'Leaderboard',
     component: Leaderboard
+  },
+  {
+    path: '/adminedit',
+    name:'AdminEdit',
+    component: AdminEdit
   }
 ]
 
