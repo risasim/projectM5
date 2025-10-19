@@ -1,17 +1,62 @@
 <template>
-  <div class="adminboard-page">
-    <div class="adminboard-container">
-      <div class="top-buttons">
-        <div class="left-buttons">
-          <button class="adminboard-btn">Add players</button>
-          <button class="adminboard-btn">Manage players</button>
+  <div class="page-container">
+    <div class="adminboard-page">
+      <div class="adminboard-container">
+        <div class="top-buttons">
+          <div class="left-buttons">
+            <button class="adminboard-btn" @click="$router.push('/login')"> Add players </button>
+            <button class="adminboard-btn" @click="$router.push('/adminedit')"> Manage players </button>
+          </div>
+
+          <h1 class="adminboard-title">Game Session Settings</h1>
+
+          <router-link to="/leaderboard"><button class="adminboard-btn">Leaderboard</button></router-link>
+          
         </div>
 
-        <h1 class="adminboard-title">Game Session Settings</h1>
+        <div class="gametype-select">
+          <label for="gametype">Choose gametype:</label>
+          <select
+            id="gametype"
+            class="adminboard-select"
+            v-model="gameMode"
+            @change="handleGameModeChange"
+          >
+            <option value="FreeFall">FreeFall</option>
+            <option value="Infected">Infected</option>
+            <option value="Team Deathmatch">Team Deathmatch</option>
+          </select>
+        </div>
 
-        <router-link to="/leaderboard"><button class="adminboard-btn">Leaderboard</button></router-link>
+        <table class="player-table">
+          <thead>
+            <tr>
+              <th>Players</th>
+              <th>Team</th>
+              <th>Hits</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Orbay</td>
+              <td>Blue</td>
+              <td>31</td>
+              <td class="alive">Alive</td>
+            </tr>
+            <tr>
+              <td>Berk</td>
+              <td>Red</td>
+              <td>25</td>
+              <td class="dead">Dead</td>
+            </tr>
+          </tbody>
+        </table>
 
-      </div>
+        <div class="session-buttons">
+          <button class="start-session" @click="startGameSession">Start session</button>
+          <button class="end-session" @click="endGameSession">End session</button>
+        </div>
 
       <div class="gametype-select">
         <label for="gametype">Choose gametype:</label>
@@ -62,18 +107,13 @@
         <button class="start-session" @click="startGameSession">Start session</button>
         <button class="end-session" @click="endGameSession">End session</button>
       </div>
+        <div v-if="message" class="message-box">
+          {{ message }}
+        </div>
 
-      <div v-if="message" class="message-box">
-        {{ message }}
       </div>
     </div>
-
-    <teleport to="body">
-      <div v-if="showPopup" class="popup-global">
-        {{ popupMessage }}
-      </div>
-    </teleport>
-  </div>
+  </div>  
 </template>
 
 <script>
@@ -82,53 +122,41 @@
     data(){
       return{
       message: "",
-      popupMessage: "",
-      showPopup: false,
-      gameMode: 'FreeFall',
-      timer: null
+      gameMode: 'FreeFall'
       }
     },
 
     methods: {
       startGameSession(){
         this.message = 'Session has started.'
+        alert('Session has started.')
       },
       endGameSession(){
         this.message = 'Session has ended.'
+        alert('Session has ended.')
       },
       handleGameModeChange(event) {
         const mode = event.target.value;
-        this.popupMessage = `Game mode changed to ${mode}`;
-        this.showPopup = true;
-        console.log("popup created");
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => {
-          this.showPopup = false;
-        }, 3000);
+        this.message = `Game mode changed to ${mode}`
+        alert(`Game mode has changed to ${mode}`)
       }
-    },
-    beforeUnmount() {
-      clearTimeout(this.timer);
     }
   };
 </script>
 
 <style>
-  .popup-global {
-    position: fixed;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #ff0000;
-    color: white;
-    padding: 14px 30px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 18px;
-    z-index: 999999;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    animation: 3s ease;
-  }
+.page-container {
+  position: fixed;       
+  top: 5%;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;      
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 </style>
 
 <style scoped>
@@ -193,7 +221,7 @@
   }
 
   .adminboard-btn:hover {
-    background-color: #f2f2f2;
+    background-color: #dac3c3;
     transform: translateY(-0.1vw);
   }
 

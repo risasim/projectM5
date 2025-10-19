@@ -1,31 +1,31 @@
 <template>
-  <div class="home-page">
-    <div class="home-content">
-      <div class="home-center">
-        <img src="@/assets/phosho-coollogo_com-blackbg.png" alt="Logo" class="home-logo" />
-        <p class="home-description">
-        </p>
+  <div class="page-container">
+    <div class="home-page">
+      <div class="home-content">
+        <div class="home-center">
+          <img src="@/assets/phosho-coollogo_com-blackbg.png" alt="Logo" class="home-logo" />
+          <p class="home-description"> </p>
 
-        <router-link to="/userboard"><button class="userboard-btn">Userboard</button></router-link>
+          <router-link to="/userboard"><button class="userboard-btn">Userboard</button></router-link>
 
-        <div class="info-section">
-          <div class="info-card1">
-            <h2 class="info-title">Gamemodes</h2>
-            <p class="info-content">We have several gamemodes you can play in such as Free-For-All, Infected and Team Deathmatch.</p>
-          </div>
-          <div class="info-card2">
-            <h1 class="info-title">Welcome to PhoSho</h1>
-            <p class="info-content">PhoSho is a laser-tag game brought to you by Group 29! It works with Infared Lasers so it is completely safe to play with. Shoot those photons and gain those points on your profile! Hope you have fun!</p>
-          </div>
-          <div class="info-card3">
-            <h2 class="info-title">Raspberry Pi</h2>
-            <p class="info-content">We have a Raspberry Pi connected to the sensor on your vest, and to the Infared gun.</p>
+          <div class="info-section">
+            <div class="info-card1">
+              <h2 class="info-title">Gamemodes</h2>
+              <p class="info-content">We have several gamemodes you can play in such as Free-For-All, Infected and Team Deathmatch.</p>
+            </div>
+            <div class="info-card2">
+              <h1 class="info-title">Welcome to PhoSho</h1>
+              <p class="info-content">PhoSho is a laser-tag game brought to you by Group 29! It works with Infared Lasers so it is completely safe to play with. Shoot those photons and gain those points on your profile! Hope you have fun!</p>
+            </div>
+            <div class="info-card3">
+              <h2 class="info-title">Raspberry Pi</h2>
+              <p class="info-content">We have a Raspberry Pi connected to the sensor on your vest, and to the Infared gun.</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <script>
@@ -35,8 +35,20 @@ export default {
 </script>
 
 <style scoped>
+.page-container {
+  position: fixed;       
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;      
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .home-page {
-  position: relative;
+  position: absolute;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -52,7 +64,8 @@ export default {
 }
 
 .home-logo {
-  margin-bottom: 15px;
+  margin-top: 70px;
+  margin-bottom: 2px;
 }
 
 .home-title {
@@ -72,15 +85,15 @@ export default {
   font-family: 'Trebuchet MS', Arial, sans-serif;
   font-weight: 600;
   border: 4px solid #000000;
-  border-radius: 19px;
-  padding: 12px 28px;
+  border-radius: 20px;
+  padding: 10px 20px;
   cursor: pointer;
-  font-size: 2rem;
+  font-size: 1.5rem;
   transition: 0.3s;
 }
 
 .userboard-btn:hover {
-  background: #e22e2e;
+  background: #dac3c3;
   color: rgb(0, 0, 0);
   transform: scale(1.05);
   border: 3px solid #000000;
@@ -124,10 +137,12 @@ export default {
 
 }
 
-.info-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(179, 0, 0, 0.3);
+.info-card1:hover,
+.info-card2:hover,
+.info-card3:hover {
+  transform: translateY(-5px);
 }
+
   /*font-family: 'Trebuchet MS', Arial, sans-serif;*/
 .info-title {
   color: #b30000;
