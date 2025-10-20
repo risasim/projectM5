@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"database/sql"
@@ -51,6 +51,7 @@ func getEnv(key, fallback string) string {
 // App holds the db and the gameManager in one structure
 type App struct {
 	DB           *sql.DB
+	UserRepo     db.UserRepositoryInterface
 	Routes       *gin.Engine
 	GameManager  *state.GameManager
 	upgrader     websocket.Upgrader
@@ -97,8 +98,10 @@ func (a *App) CreateConnection() {
 // SetupLogin sets up the login handler
 func (a *App) SetupLogin() {
 	var config *config = loadConfig()
-	repo := db.NewUsersRepository(a.DB)
-	a.loginHandler = auth.NewLoginHandler(repo, []byte(config.JWTSecret), "60")
+	if a.UserRepo == nil {
+		a.UserRepo = db.NewUsersRepository(a.DB)
+	}
+	a.loginHandler = auth.NewLoginHandler(a.UserRepo, []byte(config.JWTSecret), "60")
 }
 
 // Migrate does runs the migrations in the db/migrations folder
