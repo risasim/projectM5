@@ -13,7 +13,7 @@ class web:
             self.socket = sock
             while True:
                 received = sock.recv()
-                processReception(received)
+                self.processReception(received)
 
     async def speak(self,msg):
         await self.socket.send(msg)
@@ -50,4 +50,4 @@ class web:
         print(message)
 
 
-asyncio.get_event_loop().run_until_complete(listen) 
+
