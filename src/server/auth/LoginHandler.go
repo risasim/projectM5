@@ -40,7 +40,7 @@ func (h *LoginHandler) Login(ctx *gin.Context) {
 	}
 
 	user, err := h.userRepository.GetUser(credentials.Username)
-	if err != nil {
+	if err != nil || user == nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
