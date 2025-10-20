@@ -39,5 +39,5 @@ jobs:
         run: go mod tidy
 
       - name: Run tests
-        working-directory: ./project
+        working-directory: ./projectM5
         run: go test ./src/server/tests -v
