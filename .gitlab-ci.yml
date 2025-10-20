@@ -1,0 +1,29 @@
+stages:
+  - test
+
+variables:
+  GOCACHE: "$CI_PROJECT_DIR/.cache/go-build"
+  GOPATH: "$CI_PROJECT_DIR/.go"
+  GO111MODULE: "on"
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .go/pkg/mod
+    - .cache/go-build
+
+test:
+  stage: test
+  image: golang:1.24
+  rules:
+    # Only run on these branches
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "web/basics"'
+    - if: '$CI_COMMIT_BRANCH == "web/tests"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  before_script:
+    # Move to folder containing go.mod
+    - cd src/server
+    - go mod tidy
+  script:
+    - go test ./tests -v
