@@ -7,7 +7,9 @@
           <p class="home-description"> </p>
 
           <router-link to="/userboard"><button class="userboard-btn">Userboard</button></router-link>
-
+          <div class="leaderboard">
+          <router-link to="/leaderboard"><button class="leaderboard-btn">Leaderboard</button></router-link>
+          </div>
           <div class="info-section">
             <div class="info-card1">
               <h2 class="info-title">Gamemodes</h2>
@@ -90,9 +92,34 @@ export default {
   cursor: pointer;
   font-size: 1.5rem;
   transition: 0.3s;
+  margin-top: -10%;
 }
 
+
+.leaderboard-btn {
+  background: #ffffff;
+  color: rgb(0, 0, 0);
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-weight: 600;
+  border: 4px solid #000000;
+  border-radius: 20px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 1.5rem;
+  transition: 0.3s;
+}
+
+.leaderboard{
+  padding: 1%;
+}
 .userboard-btn:hover {
+  background: #dac3c3;
+  color: rgb(0, 0, 0);
+  transform: scale(1.05);
+  border: 3px solid #000000;
+}
+
+.leaderboard-btn:hover {
   background: #dac3c3;
   color: rgb(0, 0, 0);
   transform: scale(1.05);
@@ -104,7 +131,7 @@ export default {
   justify-content: center;
   flex-wrap: wrap;
   gap: 20px;
-  margin-top: 50px;
+  margin-top: 20px;
 }
 
 .info-card1 {
