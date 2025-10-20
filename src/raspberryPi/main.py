@@ -1,24 +1,9 @@
 import asyncio
 import websockets
 import json
+from web import web
 
 url = "https://local"
+socket = None
 
-async def listen():
-    
-    async with websockets.connect(url) as socket:
-
-        while True:
-            received = socket.recv()
-            processReception(received)
-
-
-asyncio.get_event_loop().run_until_complete(listen)    
-
-
-def processReception(received):
-    package = json.dumps(received)
-
-
-    pass
-    
+webInstance = web(url)
