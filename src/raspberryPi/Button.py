@@ -2,6 +2,7 @@ from gpiozero import Button
 import time
 import Gunled
 import Transmitter
+from signal import pause
 from web import alive
 
 
@@ -59,16 +60,7 @@ def buttonpress():
 
 sensor.when_pressed = buttonpress
 
-def main():
-    try: 
-        while(True):
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        print("inturrupted")
-
-
-main()
+pause()
 
 ## KY-004 Button
 ## GND (right) connect to ground on rpi.
