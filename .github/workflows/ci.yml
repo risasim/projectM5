@@ -35,9 +35,8 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Install dependencies
-        working-directory: ./src/server
+        working-directory: ./project/src/server
         run: go mod tidy
 
       - name: Run tests
-        working-directory: ./projectM5
         run: go test ./src/server/tests -v
