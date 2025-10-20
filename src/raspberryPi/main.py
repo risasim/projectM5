@@ -83,11 +83,28 @@ class WebClient:
 
 
 class ReceiverThread(Thread):
-    pass
+    
+    def __init__(self,webc):
+        pass
+    def run(self):
+        pass
 
 
 class TransmitterThread(Thread):
-    pass
+    def __init__(self,webc):
+        pass
+    def run(self):
+        pass
+
+url = "whatdahellyurl.com"
+client = WebClient(url)
+
+try:
+    client.start()
+except KeyboardInterrupt:
+    print("Interruption occured.")
+finally:
+    client.stop()
 
 
 
