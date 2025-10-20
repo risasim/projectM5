@@ -30,12 +30,14 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/project/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
       - name: Install dependencies
+        working-directory: ./src/server
         run: go mod tidy
 
       - name: Run tests
-        run: go test ./project/src/server/tests -v
+        working-directory: ./project
+        run: go test ./src/server/tests -v
