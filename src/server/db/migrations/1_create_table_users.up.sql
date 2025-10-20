@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS users(
+    id BIGSERIAL NOT NULL PRIMARY KEY,
+    isAdmin BOOLEAN NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    deathSound VARCHAR(255),
+    api_key VARCHAR(255),
+    pi_SN VARCHAR(255)
+)
