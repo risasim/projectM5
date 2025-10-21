@@ -18,6 +18,8 @@ type GameManager struct {
 	WsPis map[*websocket.Conn]bool
 	// BroadcastPis is a channel that will broadcast messages to all of the leaderboards -> all of them
 	BroadcastPis chan []byte
+	// Game is actual game data
+	Game GameMode
 }
 
 // NewGameManager initializes a new GameManager
