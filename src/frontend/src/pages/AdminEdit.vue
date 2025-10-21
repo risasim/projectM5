@@ -168,4 +168,74 @@ export default {
   transform: translateY(0); 
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); 
 }
+
+@media (max-width: 768px) {
+  .userlist-container {
+    width: 90%;
+    padding: 5vw 4vw;
+    border-radius: 3vw;
+  }
+
+  .userlist-title {
+    font-size: 5vw;
+    margin-bottom: 3vw;
+  }
+
+  .userlist-table {
+    font-size: 3.5vw;
+    border-spacing: 0;
+  }
+
+  .userlist-table th,
+  .userlist-table td {
+    padding: 3vw 2vw;
+    border-width: 0.3vw;
+  }
+
+  .userlist-container {
+    overflow-x: auto;
+  }
+
+  .edit-btn,
+  .delete-btn {
+    font-size: 3.5vw;
+    padding: 1.5vw 3vw;
+    border-radius: 2vw;
+    margin: 1vw 0.5vw;
+  }
+
+  .back-btn {
+    font-size: 3.5vw;
+    padding: 2vw 5vw;
+    border-radius: 3vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .userlist-container {
+    margin-top: -100px;
+    width: 80%;
+    padding: 6vw 5vw;
+  }
+
+  .userlist-title {
+    font-size: 6vw;
+  }
+
+  .userlist-table {
+    font-size: 4vw;
+  }
+
+  .edit-btn,
+  .delete-btn {
+    font-size: 3.8vw;
+    padding: 2vw 4vw;
+  }
+
+  .back-btn {
+    font-size: 4vw;
+    padding: 2.5vw 6vw;
+  }
+}
+
 </style>

@@ -283,4 +283,101 @@
     text-align: center;
     font-size: 1vw;
   }
+
+@media (max-width: 768px) {
+  .adminboard-container {
+    width: 90%;
+    padding: 5vw 4vw;
+    border-radius: 3vw;
+  }
+
+  .top-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 2vw;
+  }
+
+  .left-buttons {
+    flex-direction: row;
+    justify-content: center;
+    gap: 3vw;
+  }
+
+  .adminboard-title {
+    font-size: 5vw;
+    text-align: center;
+  }
+
+  .adminboard-btn {
+    font-size: 3.5vw;
+    padding: 1.5vw 3vw;
+    border-radius: 2vw;
+  }
+
+  .gametype-select label {
+    font-size: 3.8vw;
+  }
+
+  .adminboard-select {
+    font-size: 3.5vw;
+    padding: 1.2vw 2vw;
+  }
+
+  .adminboard-container {
+    overflow-x: auto;
+  }
+
+  .player-table {
+    font-size: 3.2vw;
+    border-spacing: 0;
+  }
+
+  .player-table th,
+  .player-table td {
+    padding: 2vw 3vw;
+    border-width: 0.3vw;
+  }
+
+  .session-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 3vw;
+  }
+
+  .start-session,
+  .end-session {
+    font-size: 3.5vw;
+    padding: 2vw 5vw;
+    border-radius: 3vw;
+  }
+
+  .message-box {
+    font-size: 3.5vw;
+    margin-top: 3vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .adminboard-container {
+    margin-top: -100px;
+    width: 80%;
+    padding: 6vw 5vw;
+  }
+
+  .adminboard-title {
+    font-size: 6vw;
+  }
+
+  .adminboard-btn,
+  .start-session,
+  .end-session {
+    font-size: 4vw;
+    padding: 2vw 6vw;
+  }
+
+  .player-table {
+    font-size: 3.8vw;
+  }
+}
+
 </style>

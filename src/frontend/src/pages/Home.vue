@@ -1,28 +1,39 @@
 <template>
-  <div class="page-container">
-    <div class="home-page">
-      <div class="home-content">
-        <div class="home-center">
-          <img src="@/assets/phosho-coollogo_com-blackbg.png" alt="Logo" class="home-logo" />
-          <p class="home-description"> </p>
+  <div class="home-page">
+    <div class="home-content">
+      <div class="home-center">
+        <img src="@/assets/phosho-coollogo_com-blackbg.png" alt="Logo" class="home-logo" />
 
-          <router-link to="/userboard"><button class="userboard-btn">Userboard</button></router-link>
-          <div class="leaderboard">
-          <router-link to="/leaderboard"><button class="leaderboard-btn">Leaderboard</button></router-link>
+        <div class="button-group">
+          <router-link to="/userboard">
+            <button class="userboard-btn">Userboard</button>
+          </router-link>
+          <router-link to="/leaderboard">
+            <button class="leaderboard-btn">Leaderboard</button>
+          </router-link>
+        </div>
+
+        <div class="info-section">
+          <div class="info-card1">
+            <h2 class="info-title">Gamemodes</h2>
+            <p class="info-content">
+              We have several gamemodes you can play in such as Free-For-All, Infected and Team Deathmatch.
+            </p>
           </div>
-          <div class="info-section">
-            <div class="info-card1">
-              <h2 class="info-title">Gamemodes</h2>
-              <p class="info-content">We have several gamemodes you can play in such as Free-For-All, Infected and Team Deathmatch.</p>
-            </div>
-            <div class="info-card2">
-              <h1 class="info-title">Welcome to PhoSho</h1>
-              <p class="info-content">PhoSho is a laser-tag game brought to you by Group 29! It works with Infared Lasers so it is completely safe to play with. Shoot those photons and gain those points on your profile! Hope you have fun!</p>
-            </div>
-            <div class="info-card3">
-              <h2 class="info-title">Raspberry Pi</h2>
-              <p class="info-content">We have a Raspberry Pi connected to the sensor on your vest, and to the Infared gun.</p>
-            </div>
+
+          <div class="info-card2">
+            <h1 class="info-title">Welcome to PhoSho</h1>
+            <p class="info-content">
+              PhoSho is a laser-tag game brought to you by Group 29! It works with Infared Lasers so it is completely safe to play with.
+              Shoot those photons and gain those points on your profile! Hope you have fun!
+            </p>
+          </div>
+
+          <div class="info-card3">
+            <h2 class="info-title">Raspberry Pi</h2>
+            <p class="info-content">
+              We have a Raspberry Pi connected to the sensor on your vest, and to the Infared gun.
+            </p>
           </div>
         </div>
       </div>
@@ -37,93 +48,54 @@ export default {
 </script>
 
 <style scoped>
-.page-container {
-  position: fixed;       
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;      
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .home-page {
-  position: absolute;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
+  background: url('@/assets/red-bg.png') center/cover no-repeat;
   color: #111;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .home-content {
-  flex: 1;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  width: 100%;
+  padding: 2rem 1rem;
 }
 
 .home-logo {
-  margin-top: 70px;
-  margin-bottom: 2px;
+  display: block;
+  max-width: 380px;
+  width: 80%;
+  height: auto;
+  margin: 0 auto 1.5rem auto;
 }
 
-.home-title {
-  font-size: 3rem;
-  font-weight: 800;
-  color: #b30000; /* strong red */
-  margin-bottom: 10px;
-}
-
-.home-description {
-  color: #333;
-}
-
-.userboard-btn {
-  background: #ffffff;
-  color: rgb(0, 0, 0);
-  font-family: 'Trebuchet MS', Arial, sans-serif;
-  font-weight: 600;
-  border: 4px solid #000000;
-  border-radius: 20px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-size: 1.5rem;
-  transition: 0.3s;
-  margin-top: -10%;
-}
-
-
+.userboard-btn,
 .leaderboard-btn {
   background: #ffffff;
-  color: rgb(0, 0, 0);
+  color: #000;
   font-family: 'Trebuchet MS', Arial, sans-serif;
   font-weight: 600;
-  border: 4px solid #000000;
-  border-radius: 20px;
-  padding: 10px 20px;
+  border: 3px solid #000;
+  border-radius: 25px;
+  padding: 0.7rem 1.5rem;
   cursor: pointer;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   transition: 0.3s;
+  margin: 0.5rem;
+  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.2);
 }
 
-.leaderboard{
-  padding: 1%;
-}
-.userboard-btn:hover {
-  background: #dac3c3;
-  color: rgb(0, 0, 0);
-  transform: scale(1.05);
-  border: 3px solid #000000;
-}
-
+.userboard-btn:hover,
 .leaderboard-btn:hover {
   background: #dac3c3;
-  color: rgb(0, 0, 0);
   transform: scale(1.05);
-  border: 3px solid #000000;
 }
 
 .info-section {
@@ -131,37 +103,19 @@ export default {
   justify-content: center;
   flex-wrap: wrap;
   gap: 20px;
-  margin-top: 20px;
+  margin-top: 30px;
 }
 
-.info-card1 {
-  background: #fff;
-  border: 3px solid #000000;
-  border-radius: 14px;
-  width: 280px;
-  padding: 25px;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
-  transition: 0.3s ease;
-
-}
-.info-card2 {
-  background: #fff;
-  border: 3px solid #000000;
-  border-radius: 14px;
-  width: 280px;
-  padding: 25px;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
-  transition: 0.3s ease;
-}
+.info-card1,
+.info-card2,
 .info-card3 {
   background: #fff;
-  border: 3px solid #000000;
+  border: 3px solid #000;
   border-radius: 14px;
   width: 280px;
   padding: 25px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
   transition: 0.3s ease;
-
 }
 
 .info-card1:hover,
@@ -170,7 +124,6 @@ export default {
   transform: translateY(-5px);
 }
 
-  /*font-family: 'Trebuchet MS', Arial, sans-serif;*/
 .info-title {
   color: #b30000;
   font-size: 1.4rem;
@@ -185,5 +138,56 @@ export default {
   font-family: 'Trebuchet MS', Arial, sans-serif;
   line-height: 1.5;
 }
+
+@media (max-width: 768px) {
+  .home-logo {
+    max-width: 500px;
+  }
+
+  .userboard-btn,
+  .leaderboard-btn {
+    width: 50%;
+    font-size: 1rem;
+    padding: 0.6rem;
+  }
+
+  .info-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .info-card1,
+  .info-card2,
+  .info-card3 {
+    width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-logo {
+    max-width: 450px;
+  }
+
+  .userboard-btn,
+  .leaderboard-btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.8rem;
+  }
+ 
+  .info-card1,
+  .info-card2,
+  .info-card3 {
+    width: 80%;
+    padding: 15px;
+  }
+
+  .info-title {
+    font-size: 1rem;
+  }
+
+  .info-content {
+    font-size: 0.9rem;
+  }
+}
 </style>
-  

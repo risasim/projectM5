@@ -22,12 +22,12 @@ export default {
 
 <style scoped>
 .page-container {
-  position: fixed;       
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;      
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -37,23 +37,24 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh; 
+  height: 100%;
   width: 100%;
 }
 
 .login-box {
   background: white;
-  padding: 40px 50px;
+  padding: 2rem;
   border-radius: 20px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   width: 360px;
+  max-width: 90%;              
   text-align: center;
-  border: 4px solid #000000;
+  border: 4px solid #000;
 }
 
 .login-title {
-  margin-bottom: 30px;
-  font-size: 32px;
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #ff4b4b;
 }
@@ -61,17 +62,16 @@ export default {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 1rem;
 }
 
 .login-input {
-  padding: 12px;
+  padding: 0.75rem;
   border-radius: 8px;
   border: 1px solid #ccc;
-  font-size: 16px;
+  font-size: 1rem;
   outline: none;
   transition: 0.2s ease;
-  
 }
 
 .login-input:focus {
@@ -82,19 +82,40 @@ export default {
 .login-button {
   background: #ff1111;
   color: white;
-  font-size: 18px;
+  font-size: 1.1rem;
   font-weight: 600;
-  padding: 12px;
+  padding: 0.8rem;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  width: 360px;
-  border: 4px solid #000000;
+  border: 4px solid #000;
+  width: 100%;                
 }
 
 .login-button:hover {
   background: #ff6666;
   transform: scale(1.03);
+}
+
+@media (max-width: 600px) {
+  .login-box {
+    padding: 1.5rem;
+    width: 80%;
+  }
+
+  .login-title {
+    font-size: 1.6rem;
+  }
+
+  .login-input {
+    font-size: 0.95rem;
+    padding: 0.6rem;
+  }
+
+  .login-button {
+    font-size: 1rem;
+    padding: 0.7rem;
+  }
 }
 </style>
