@@ -18,6 +18,7 @@ type GameManager struct {
 	WsPis map[*websocket.Conn]bool
 	// BroadcastPis is a channel that will broadcast messages to all of the leaderboards -> all of them
 	BroadcastPis chan []byte
+	upgrader     websocket.Upgrader
 }
 
 // NewGameManager initializes a new GameManager
@@ -28,15 +29,28 @@ func NewGameManager() *GameManager {
 		BroadCastLeaderBoard: make(chan []byte),
 		WsPis:                make(map[*websocket.Conn]bool),
 		BroadcastPis:         make(chan []byte),
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		},
 	}
 }
 
-func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context, upgrader *websocket.Upgrader) {
+func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context) {
+	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer conn.Close()
 
+	gm.Mutex.Lock()
+	gm.WsPis[conn] = true
+	gm.Mutex.Unlock()
 }
 
-func (gm *GameManager) WsPisHandler(c *gin.Context, upgrader *websocket.Upgrader) {
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+func (gm *GameManager) WsPisHandler(c *gin.Context) {
+	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		fmt.Println(err)
 		return

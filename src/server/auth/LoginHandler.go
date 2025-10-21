@@ -17,6 +17,11 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
+type PiCredentials struct {
+	ApiKey string `json:"apiKey"`
+	PiSn   string `json:"piSn"`
+}
+
 type LoginHandler struct {
 	userRepository db.UserRepositoryInterface
 	secretKey      []byte
@@ -46,6 +51,43 @@ func (h *LoginHandler) Login(ctx *gin.Context) {
 	}
 
 	if !db.VerifyPassword(credentials.Password, user.Password) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+
+	tokenString, err := h.createToken(user.Username, user.IsAdmin)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "opsie"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"token": tokenString})
+}
+
+func (h *LoginHandler) PiLogin(ctx *gin.Context) {
+	var credentials PiCredentials
+	err := ctx.ShouldBindJSON(&credentials)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
+		return
+	}
+
+	user, err := h.userRepository.GetPiUser(credentials.PiSn)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+
+	if user == nil {
+		ctx.JSON(401, gin.H{"error": "invalid device or API key"})
+		return
+	}
+
+	if !user.ApiKey.Valid {
+		ctx.JSON(401, gin.H{"error": "fuck you"})
+		return
+	}
+
+	if !db.VerifyPassword(credentials.ApiKey, user.ApiKey.String) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
