@@ -60,12 +60,12 @@ export default {
 
 <style scoped>
 .page-container {
-  position: fixed;       
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;      
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -75,31 +75,24 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh; 
+  height: 100%;
   width: 100%;
 }
 
 .login-box {
-  background: #ffffff;
-  border: 0.2vw solid #000000;
-  border-radius: 1.5vw;
-  padding: 2vw;
-  margin-bottom: 0;
-  box-shadow: 0 0.5vw 1vw rgba(0, 0, 0, 0.15);
-  width: 25%;
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  width: 360px;
+  max-width: 90%;              
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  border: 4px solid #000000;
-
+  border: 4px solid #000;
 }
 
 .login-title {
-  margin-top: -1vw;
-  margin-bottom: 1.5vw;
-  font-size: 2vw;
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #b30000;
 }
@@ -107,18 +100,16 @@ export default {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1vw;
-  width: 100%; 
+  gap: 1rem;
 }
 
 .login-input {
-  padding: 2.6%;
-  border-radius: 0.5vw;
-  border: 0.08vw solid #ccc;
-  font-size: 1vw;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
   outline: none;
   transition: 0.2s ease;
-  margin-bottom: 0.5vw; 
 }
 
 .login-input:focus {
@@ -130,20 +121,41 @@ export default {
   background: #b30000;
   background: #ff1111;
   color: white;
-  font-size: 1.1vw;
+  font-size: 1.1rem;
   font-weight: 600;
-  padding: 2.6%;
+  padding: 0.8rem;
   border: none;
   border-radius: 0.5vw;
 
   cursor: pointer;
   transition: all 0.2s ease;
-  width: 360px;
-  border: 4px solid #000000;
+  border: 4px solid #000;
+  width: 100%;                
 }
 
 .login-button:hover {
   background: #b30000;
   transform: scale(1.03);
+}
+
+@media (max-width: 600px) {
+  .login-box {
+    padding: 1.5rem;
+    width: 80%;
+  }
+
+  .login-title {
+    font-size: 1.6rem;
+  }
+
+  .login-input {
+    font-size: 0.95rem;
+    padding: 0.6rem;
+  }
+
+  .login-button {
+    font-size: 1rem;
+    padding: 0.7rem;
+  }
 }
 </style>

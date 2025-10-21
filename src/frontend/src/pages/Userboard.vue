@@ -254,4 +254,94 @@ export default {
   transform: translateY(0); 
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); 
 }
+
+@media (max-width: 768px) {
+  .userboard-container {
+    width: 90%;
+    padding: 5vw 4vw;
+    border-width: 0.5vw;
+    border-radius: 3vw;
+    top: 5%;
+  }
+
+  .floating-userboard-title {
+    top: -4vw;
+    padding: 1vw 3vw;
+    border-radius: 2vw;
+  }
+
+  .floating-userboard-title h1 {
+    font-size: 5vw;
+  }
+
+  .userboard-top {
+    flex-direction: column;
+    align-items: center;
+    gap: 3vw;
+  }
+
+  .username,
+  .team {
+    font-size: 4vw;
+    text-align: center;
+  }
+
+  .leaderboard-btn {
+    font-size: 3.5vw;
+    padding: 1vw 3vw;
+    border-radius: 2vw;
+  }
+
+  .stats-section {
+    font-size: 3.5vw;
+    text-align: center;
+  }
+
+  .sfx-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 2vw;
+  }
+
+  .sfx-label {
+    font-size: 3.5vw;
+    margin: 0;
+  }
+
+  .sfx-input {
+    width: 80%;
+    font-size: 3.3vw;
+    padding: 2vw;
+    border-radius: 2vw;
+  }
+
+  .session-status {
+    font-size: 3.5vw;
+    text-align: center;
+  }
+
+  .enter-session-btn {
+    font-size: 3.8vw;
+    padding: 2vw 5vw;
+    border-radius: 3vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .userboard-container {
+    margin-top: -100px;
+    width: 80%;
+    padding: 6vw 5vw;
+  }
+
+  .floating-userboard-title h1 {
+    font-size: 6vw;
+  }
+
+  .enter-session-btn {
+    font-size: 4vw;
+    padding: 2.5vw 6vw;
+  }
+}
+
 </style>
