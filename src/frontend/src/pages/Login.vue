@@ -4,8 +4,14 @@
       <div class="login-box">
         <h1 class="login-title">Login</h1>
         <form class="login-form">
+
+
           <input type="text" placeholder="Username" class="login-input" />
+
+
           <input type="password" placeholder="Password" class="login-input" />
+
+
           <router-link to="/userboard"><button type="submit" class="login-button">Log In</button></router-link>
           <router-link to="/adminboard"><button type="submit" class="login-button">Log In (admin)</button></router-link>
         </form>
@@ -16,8 +22,40 @@
 
 <script>
 export default {
-  name: 'AppLogin'
-}
+  name: 'AppLogin',
+  methods: {
+    loginUser() {
+      this.errorMessage = '';
+      this.successMessage = '';
+      this.isLoading = true;
+      // SECURITY
+      const usernameResult = InputSanitizer.sanitizeUsername(this.username);
+      if (!usernameResult.valid) {
+        this.errorMessage = usernameResult.error;
+        this.isLoading = false;
+        return;
+      }
+
+      if (!this.password || this.password.trim().length === 0) {
+        this.errorMessage = 'Password cannot be empty';
+        this.isLoading = false;
+        return;
+      }
+
+      if (this.password.length > 50) {
+        this.errorMessage = 'Password too long';
+        this.isLoading = false;
+        return;
+      }
+
+      if (InputSanitizer.containsCommandInjection(this.password)) {
+        this.errorMessage = 'Password contains dangerous characters';
+        this.isLoading = false;
+        return;
+      }
+    }
+  }
+};
 </script>
 
 <style scoped>

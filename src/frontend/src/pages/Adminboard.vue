@@ -10,7 +10,7 @@
 
           <h1 class="adminboard-title">Game Session Settings</h1>
 
-          <router-link to="/leaderboard"><button class="adminboard-btn">Leaderboard</button></router-link>
+          <button class="adminboard-btn" @click="goToLeaderboard">Leaderboard</button>
         </div>
 
         <div class="gametype-select">
@@ -30,24 +30,18 @@
         <table class="player-table">
           <thead>
             <tr>
-              <th>Players</th>
+              <th>Joined Players</th>
               <th>Team</th>
-              <th>Hits</th>
-              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>Orbay</td>
               <td>Blue</td>
-              <td>31</td>
-              <td class="alive">Alive</td>
             </tr>
             <tr>
               <td>Berk</td>
               <td>Red</td>
-              <td>25</td>
-              <td class="dead">Dead</td>
             </tr>
           </tbody>
         </table>
@@ -138,7 +132,16 @@
         const mode = event.target.value;
         this.message = `Game mode changed to ${mode}`
         alert(`Game mode has changed to ${mode}`)
-      }
+      },
+      goToLeaderboard() {
+        if (this.gameMode === 'FreeFall') {
+          this.$router.push('/leaderboard-ffa');
+        } else if (this.gameMode === 'Infected') {
+          this.$router.push('/leaderboard-inf');
+        } else if (this.gameMode === 'Team Deathmatch') {
+          this.$router.push('/leaderboard-tdm');
+        }
+      } 
     }
   };
 </script>
