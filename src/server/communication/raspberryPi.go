@@ -12,6 +12,8 @@ type StartedMessage struct {
 	At time.Time `json:"at"`
 	// Active is flag to determine if the pi is active or waits for activation
 	Active bool `json:"active"`
+	// GameId is id for the exact player that will then annouce the dead
+	GameId int `json:"gameId"`
 }
 
 // EndedMessage is message sent after the end of the game to all players

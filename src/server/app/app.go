@@ -7,7 +7,6 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/gorilla/websocket"
 	_ "github.com/lib/pq"
 	"github.com/risasim/projectM5/project/src/server/auth"
 	"github.com/risasim/projectM5/project/src/server/db"
@@ -54,7 +53,6 @@ type App struct {
 	UserRepo     db.UserRepositoryInterface
 	Routes       *gin.Engine
 	GameManager  *state.GameManager
-	upgrader     websocket.Upgrader
 	loginHandler *auth.LoginHandler
 }
 
@@ -131,6 +129,7 @@ func (a *App) CreateRoutes() {
 	routes := gin.Default()
 	routes.POST("/auth", a.loginHandler.Login)
 	userController := db.NewUserController(a.DB)
+	routes.POST("/piAuth", a.loginHandler.PiLogin)
 
 	protected := routes.Group("/api")
 	protected.Use(a.loginHandler.AuthenticationMiddleware)
@@ -148,13 +147,10 @@ func (a *App) CreateRoutes() {
 	// For pi
 	//protected.GET("/music")
 
-	//routes.GET("/wsLeaderboard")
-	//routes.GET("/wsPis")
+	protected.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
+	protected.GET("/wsPis", a.GameManager.WsPisHandler)
+
 	a.Routes = routes
-	a.upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
 }
 
 func (a *App) Run(gm *state.GameManager) {

@@ -9,9 +9,20 @@ import (
 
 // MockUserRepository is a mock of user repository used for testing
 type MockUserRepository struct {
-	mu     sync.Mutex
-	users  map[string]model.GetUserAuth
-	autoid uint
+	mu        sync.Mutex
+	users     map[string]model.GetUserAuth
+	usersByPi map[string]*model.GetUserAuth
+	autoid    uint
+}
+
+func (m *MockUserRepository) GetPiUser(piSN string) (*model.GetUserAuth, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if u, exists := m.usersByPi[piSN]; exists {
+		return u, nil
+	}
+	return nil, nil
 }
 
 // SelectUsers does mock the real
@@ -49,6 +60,11 @@ func (m MockUserRepository) InsertUser(user model.PostUser, apiKey string, isAdm
 		ApiKey:     sqlNullString(apiKey),
 	}
 	m.users[user.Username] = newUser
+
+	if newUser.PiSN.Valid {
+		m.usersByPi[newUser.PiSN.String] = &newUser
+	}
+
 	m.autoid++
 	return true
 }
@@ -66,8 +82,9 @@ func (m *MockUserRepository) GetUser(username string) (*model.GetUserAuth, error
 
 func NewMockUserRepository() db.UserRepositoryInterface {
 	return &MockUserRepository{
-		users:  make(map[string]model.GetUserAuth),
-		autoid: 1,
+		users:     make(map[string]model.GetUserAuth),
+		usersByPi: make(map[string]*model.GetUserAuth),
+		autoid:    1,
 	}
 }
 
