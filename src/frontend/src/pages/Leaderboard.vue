@@ -1,143 +1,59 @@
 <template>
-  <div class="leaderboard-page">
-    <div class="leaderboard-container">
-      <div class="top-section">
-        <h1 class="leaderboard-title">Leaderboard</h1>
-      </div>
+  <div class="leaderboard-selection-page">
+    <h1 class="info-text">
+      This page is temporary until we figure out sessions.<br />
+      When the server starts, the leaderboard button will direct you to the 
+      respective leaderboard of the session.
+    </h1>
 
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Players</th>
-            <th>Deaths</th>
-            <th>Score (Hits)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Berk</td>
-            <td>3</td>
-            <td>27</td>
-          </tr>
-          <tr>
-            <td>Orbay</td>
-            <td>2</td>
-            <td>25</td>
-          </tr>
-          <tr>
-            <td>Richard</td>
-            <td>9</td>
-            <td>14</td>
-          </tr>
-          <tr>
-            <td>Peter</td>
-            <td>3</td>
-            <td>9</td>
-          </tr>
-          <tr>
-            <td>Muhammed</td>
-            <td>7</td>
-            <td>8</td>
-          </tr>
-          <tr>
-            <td>Marciano</td>
-            <td>2</td>
-            <td>4</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <router-link to="/adminboard">
-        <button class="back-btn">Back to Adminboard</button>
+    <div class="button-container">
+      <router-link to="/leaderboard-ffa">
+        <button class="userboard-btn">Free For All</button>
+      </router-link>
+      <router-link to="/leaderboard-tdm">
+        <button class="userboard-btn">Team Deathmatch</button>
+      </router-link>
+      <router-link to="/leaderboard-inf">
+        <button class="userboard-btn">Infected</button>
       </router-link>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Leaderboard'
-}
-</script>
-
 <style scoped>
-.leaderboard-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh; 
-  width: 100%;
-  background: none;
+
+
+.info-text {
+  max-width: 700px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 3rem;
+  line-height: 1.5;
 }
 
-.leaderboard-container {
-  width: 55%;
-  max-width: 800px;
-  background: #fff;
-  border: 0.25vw solid #000;
-  border-radius: 1vw;
-  padding: 2.5vw 2vw;
-  box-shadow: 0 0.8vw 1.5vw rgba(0, 0, 0, 0.25);
+.button-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 1.5rem;
 }
 
-.top-section {
-  text-align: center;
-  margin-bottom: 2vw;
-}
-
-.leaderboard-title {
-  font-size: 1.8vw;
-  font-weight: 700;
-  text-align: center;
-}
-
-.leaderboard-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 2vw;
-  text-align: center;
-  font-size: 1vw;
-}
-
-.leaderboard-table th,
-.leaderboard-table td {
-  border: 0.1vw solid #ddd;
-  padding: 0.8vw;
-}
-
-.leaderboard-table thead {
-  background-color: #f7f7f7;
+.userboard-btn {
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Trebuchet MS', Arial, sans-serif;
   font-weight: 600;
-}
-
-.leaderboard-table tbody tr:nth-child(even) {
-  background-color: #f2f2f2;
-}
-
-.back-btn {
-  font-weight: 600;
-  font-size: 1vw;
-  border-radius: 0.5vw;
-  padding: 0.8vw 1.8vw;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  border: none;
-  box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.15);
-  background-color: #ff1500;
-  color: white;
   border: 4px solid #000000;
+  border-radius: 20px;
+  padding: 12px 28px;
+  cursor: pointer;
+  font-size: 1.5rem;
+  transition: 0.3s;
+  width: 250px;
 }
 
-.back-btn:hover {
-  background-color: #620d0a;
-  transform: translateY(-0.2vw);
-}
-
-.back-btn:active { 
-  transform: translateY(0); 
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); 
+.userboard-btn:hover {
+  background-color: #e3e3e3;
+  transform: translateY(-3px);
 }
 </style>

@@ -48,6 +48,7 @@ export default {
   methods: {
     editUser(user) {
       alert(`Editing ${user.name}`)
+      this.$router.push('/userboard');
     },
     deleteUser(user) {
       alert(`Deleting ${user.name}`)

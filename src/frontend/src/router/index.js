@@ -4,6 +4,9 @@ import Login from '@/pages/Login.vue'
 import Userboard from '@/pages/Userboard.vue'
 import Adminboard from '@/pages/Adminboard.vue'
 import Leaderboard from '@/pages/Leaderboard.vue'
+import LeaderboardFFA from '@/pages/Leaderboard-ffa.vue'
+import LeaderboardTDM from '@/pages/Leaderboard-tdm.vue'
+import LeaderboardINF from '@/pages/Leaderboard-inf.vue'
 import AdminEdit from '@/pages/AdminEdit.vue'
 
 
@@ -31,10 +34,24 @@ const routes = [
     component: Adminboard
   },
   {
-
     path: '/leaderboard',
     name: 'Leaderboard',
     component: Leaderboard
+  },
+  {
+    path: '/leaderboard-ffa',
+    name: 'LeaderboardFFA',
+    component: LeaderboardFFA
+  },
+  {
+    path: '/leaderboard-tdm',
+    name: 'LeaderboardTDM',
+    component: LeaderboardTDM
+  },
+  {
+    path: '/leaderboard-inf',
+    name: 'LeaderboardINF',
+    component: LeaderboardINF
   },
   {
     path: '/adminedit',
