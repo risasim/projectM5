@@ -34,7 +34,7 @@ func SetupTestApp(t *testing.T) *TestApp {
 			Password:   hashedPassword,
 			DeathSound: "sound.wav",
 			PiSN:       "pi-0001",
-		}, "", false)
+		}, "", true)
 
 	hashedApiKey, err := db.HashPassword("kazoo")
 	if err != nil {
@@ -48,6 +48,15 @@ func SetupTestApp(t *testing.T) *TestApp {
 			DeathSound: "sound.wav",
 			PiSN:       "pi-0002",
 		}, hashedApiKey, false)
+
+	hashedApiKey2, err := db.HashPassword("corndog")
+	_ = mockRepo.InsertUser(
+		model.PostUser{
+			Username:   "testuser3",
+			Password:   hashedPassword,
+			DeathSound: "sound.wav",
+			PiSN:       "pi-0003",
+		}, hashedApiKey2, false)
 
 	//Mocking the creation of the real app but wihout the cb
 	app := &app.App{}

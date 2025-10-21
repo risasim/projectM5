@@ -47,6 +47,7 @@ func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context) {
 	gm.Mutex.Lock()
 	gm.WsPis[conn] = true
 	gm.Mutex.Unlock()
+
 }
 
 func (gm *GameManager) WsPisHandler(c *gin.Context) {
@@ -61,6 +62,63 @@ func (gm *GameManager) WsPisHandler(c *gin.Context) {
 	gm.WsLeaderBoards[conn] = true
 	gm.Mutex.Unlock()
 
+}
+
+func (gm *GameManager) handleConnection(conn *websocket.Conn) {
+	for {
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("Error reading message:", err)
+			break
+		}
+		fmt.Printf("Received: %s\n", message)
+		//React to message
+		// switch based on the message
+
+		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			fmt.Println("Error writing message:", err)
+			break
+		}
+	}
+}
+
+// BroadcastPisHandler does broadcast to all pis
+func (gm *GameManager) BroadcastPisHandler() {
+	for {
+		// Grab the next message from the broadcast channel
+		message := <-gm.BroadcastPis
+
+		// Send the message to all connected clients
+		gm.Mutex.Lock()
+		for pi := range gm.WsPis {
+			err := pi.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				pi.Close()
+				delete(gm.WsPis, pi)
+			}
+		}
+		gm.Mutex.Unlock()
+	}
+}
+
+// BroadcastLeaderBoardHandler does broadcast the message about the game state to all of involved
+// connections
+func (gm *GameManager) BroadcastLeaderBoardHandler() {
+	for {
+		// Grab the next message from the broadcast channel
+		message := <-gm.BroadCastLeaderBoard
+
+		// Send the message to all connected clients
+		gm.Mutex.Lock()
+		for client := range gm.WsLeaderBoards {
+			err := client.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				client.Close()
+				delete(gm.WsLeaderBoards, client)
+			}
+		}
+		gm.Mutex.Unlock()
+	}
 }
 
 // GameStatus is an enumaration of possible game statuses
