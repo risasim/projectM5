@@ -186,4 +186,24 @@ export default {
 }
 
 
+@media (max-width: 600px) {
+  .header-gradient {
+    justify-content: center; 
+    padding: 0; 
+    height: 70px; 
+  }
+
+  .header-title {
+    width: 250px; 
+  }
+
+  .login-button {
+    position: absolute;
+    right: 2px;    
+    top: 30px;
+    padding: 3px 10px;
+    font-size: 0.85rem;
+  }
+}
+
 </style>

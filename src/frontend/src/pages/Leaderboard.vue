@@ -56,4 +56,64 @@
   background-color: #e3e3e3;
   transform: translateY(-3px);
 }
+
+@media (max-width: 768px) {
+  .leaderboard-container {
+    width: 90%;
+    padding: 5vw 3vw;
+    border-radius: 3vw;
+  }
+
+  .leaderboard-title {
+    font-size: 5vw;
+    margin-bottom: 3vw;
+  }
+
+  .leaderboard-table {
+    font-size: 3.8vw;
+    border-spacing: 0;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 3vw 1vw;
+    border-width: 0.3vw;
+  }
+
+  .leaderboard-table thead {
+    background-color: #f7f7f7;
+  }
+
+  .leaderboard-container {
+    overflow-x: auto;
+  }
+
+  .back-btn {
+    font-size: 3.5vw;
+    padding: 2vw 5vw;
+    border-radius: 3vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .leaderboard-container {
+    width: 80%;
+    margin-top: -100px;
+    padding: 6vw 4vw;
+  }
+
+  .leaderboard-title {
+    font-size: 6vw;
+  }
+
+  .leaderboard-table {
+    font-size: 4vw;
+  }
+
+  .back-btn {
+    font-size: 4vw;
+    padding: 2.5vw 6vw;
+  }
+}
+
 </style>
