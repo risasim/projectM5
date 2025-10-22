@@ -1,1 +1,1 @@
-# Rapsberry Pi code
+# Raspberry Pi code

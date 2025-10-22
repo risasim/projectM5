@@ -10,11 +10,33 @@ type UserRepositoryInterface interface {
 	SelectUsers() []model.GetUserResponse
 	InsertUser(user model.PostUser, apiKey string, isAdmin bool) bool
 	GetUser(username string) (*model.GetUserAuth, error)
+	GetPiUser(piSN string) (*model.GetUserAuth, error)
 }
 
 // UsersRepository does execute the sql calls on the db
 type UsersRepository struct {
 	db *sql.DB
+}
+
+func (u UsersRepository) GetPiUser(piSN string) (*model.GetUserAuth, error) {
+	var user model.GetUserAuth
+	err := u.db.QueryRow("SELECT * FROM users WHERE pi_SN = $1 ", piSN).Scan(
+		&user.ID,
+		&user.IsAdmin,
+		&user.Username,
+		&user.Password,
+		&user.DeathSound,
+		&user.PiSN,
+		&user.ApiKey,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // no user found
+		}
+		log.Println("GetUser error:", err)
+		return nil, err
+	}
+	return &user, nil
 }
 
 // NewUsersRepository is a constructor for the UsersRepository

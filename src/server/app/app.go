@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"database/sql"
@@ -12,7 +12,6 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/gorilla/websocket"
 	_ "github.com/lib/pq"
 	"github.com/risasim/projectM5/project/src/server/auth"
 	"github.com/risasim/projectM5/project/src/server/communication"
@@ -54,9 +53,9 @@ func getEnv(key, fallback string) string {
 // App holds the db and the gameManager in one structure
 type App struct {
 	DB           *sql.DB
+	UserRepo     db.UserRepositoryInterface
 	Routes       *gin.Engine
 	GameManager  *state.GameManager
-	upgrader     websocket.Upgrader
 	loginHandler *auth.LoginHandler
 }
 
@@ -100,8 +99,10 @@ func (a *App) CreateConnection() {
 // SetupLogin sets up the login handler
 func (a *App) SetupLogin() {
 	var config *config = loadConfig()
-	repo := db.NewUsersRepository(a.DB)
-	a.loginHandler = auth.NewLoginHandler(repo, []byte(config.JWTSecret), "60")
+	if a.UserRepo == nil {
+		a.UserRepo = db.NewUsersRepository(a.DB)
+	}
+	a.loginHandler = auth.NewLoginHandler(a.UserRepo, []byte(config.JWTSecret), "60")
 }
 
 // Migrate does runs the migrations in the db/migrations folder
@@ -131,6 +132,7 @@ func (a *App) CreateRoutes() {
 	routes := gin.Default()
 	routes.POST("/auth", a.loginHandler.Login)
 	userController := db.NewUserController(a.DB)
+	routes.POST("/piAuth", a.loginHandler.PiLogin)
 
 	protected := routes.Group("/api")
 	protected.Use(a.loginHandler.AuthenticationMiddleware)
@@ -230,13 +232,10 @@ func (a *App) CreateRoutes() {
 	// For pi
 	//protected.GET("/music") connected this to the POST from website
 
-	//routes.GET("/wsLeaderboard")
-	//routes.GET("/wsPis")
+	protected.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
+	protected.GET("/wsPis", a.GameManager.WsPisHandler)
+
 	a.Routes = routes
-	a.upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
 }
 
 func (a *App) Run(gm *state.GameManager) {

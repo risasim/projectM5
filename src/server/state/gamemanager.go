@@ -1,7 +1,6 @@
 package state
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -21,14 +20,16 @@ type GameManager struct {
 	// BroadCastLeaderBoard is a channel to broadcast message to all of the leaderboards
 	BroadCastLeaderBoard chan []byte
 	// WsPis are teh websockets that are connected to pis
-	WsPis map[string]*websocket.Conn
+	WsPis map[*websocket.Conn]bool
 	// BroadcastPis is a channel that will broadcast messages to all of the leaderboards -> all of them
-	BroadcastPis   chan []byte
-	userRepository db.UserRepositoryInterface
+	BroadcastPis chan []byte
+	// Game is actual game data
+	Game GameMode
+	upgrader     websocket.Upgrader
 }
 
 // NewGameManager initializes a new GameManager
-func NewGameManager(gameType communication.GameType, repo db.UserRepositoryInterface) *GameManager {
+func NewGameManager() *GameManager {
 	return &GameManager{
 		GameStatus:           idle,
 		Mutex:                sync.Mutex{},
@@ -38,8 +39,20 @@ func NewGameManager(gameType communication.GameType, repo db.UserRepositoryInter
 		WsPis:                make(map[string]*websocket.Conn),
 		BroadcastPis:         make(chan []byte),
 		userRepository:       repo,
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		},
 	}
 }
+
+func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context) {
+	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer conn.Close()
 
 // StartNewGame starts a new game session
 func (gm *GameManager) StartNewGame(gameType communication.GameType) error {
@@ -108,22 +121,6 @@ func (gm *GameManager) RemovePlayer(player Player) error {
 	return fmt.Errorf("error trying to remove player with this ID")
 }
 
-// BroadcastToPis to broadcast a message to all Pis
-func (gm *GameManager) BroadcastToPis(messageType communication.MsgType, data any) {
-	message := map[string]any{
-		"messageType": messageType,
-		"data":        mustJson(data),
-	}
-
-	payload, _ := json.Marshal(message)
-
-	gm.Mutex.Lock()
-	defer gm.Mutex.Unlock()
-	for _, conn := range gm.WsPis {
-		conn.WriteMessage(websocket.TextMessage, payload)
-	}
-}
-
 // SendNewMusicToPi sends new death sound to pi
 func (gm *GameManager) SendNewMusicToPi(username string, b64Sound string, fileName string) error {
 	gm.Mutex.Lock()
@@ -152,12 +149,14 @@ func mustJson(v any) json.RawMessage {
 	return b
 }
 
-func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context, upgrader *websocket.Upgrader) {
+	gm.Mutex.Lock()
+	gm.WsPis[conn] = true
+	gm.Mutex.Unlock()
 
 }
 
-func (gm *GameManager) WsPisHandler(c *gin.Context, upgrader *websocket.Upgrader) {
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+func (gm *GameManager) WsPisHandler(c *gin.Context) {
+	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -168,6 +167,63 @@ func (gm *GameManager) WsPisHandler(c *gin.Context, upgrader *websocket.Upgrader
 	gm.WsPis[conn] = true
 	gm.Mutex.Unlock()
 
+}
+
+func (gm *GameManager) handleConnection(conn *websocket.Conn) {
+	for {
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("Error reading message:", err)
+			break
+		}
+		fmt.Printf("Received: %s\n", message)
+		//React to message
+		// switch based on the message
+
+		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			fmt.Println("Error writing message:", err)
+			break
+		}
+	}
+}
+
+// BroadcastPisHandler does broadcast to all pis
+func (gm *GameManager) BroadcastPisHandler() {
+	for {
+		// Grab the next message from the broadcast channel
+		message := <-gm.BroadcastPis
+
+		// Send the message to all connected clients
+		gm.Mutex.Lock()
+		for pi := range gm.WsPis {
+			err := pi.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				pi.Close()
+				delete(gm.WsPis, pi)
+			}
+		}
+		gm.Mutex.Unlock()
+	}
+}
+
+// BroadcastLeaderBoardHandler does broadcast the message about the game state to all of involved
+// connections
+func (gm *GameManager) BroadcastLeaderBoardHandler() {
+	for {
+		// Grab the next message from the broadcast channel
+		message := <-gm.BroadCastLeaderBoard
+
+		// Send the message to all connected clients
+		gm.Mutex.Lock()
+		for client := range gm.WsLeaderBoards {
+			err := client.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				client.Close()
+				delete(gm.WsLeaderBoards, client)
+			}
+		}
+		gm.Mutex.Unlock()
+	}
 }
 
 // GameStatus is an enumaration of possible game statuses
