@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -24,12 +25,13 @@ type GameManager struct {
 	// BroadcastPis is a channel that will broadcast messages to all of the leaderboards -> all of them
 	BroadcastPis chan []byte
 	// Game is actual game data
-	Game GameMode
-	upgrader     websocket.Upgrader
+	Game           GameMode
+	upgrader       websocket.Upgrader
+	userRepository db.UserRepositoryInterface
 }
 
 // NewGameManager initializes a new GameManager
-func NewGameManager() *GameManager {
+func NewGameManager(repo db.UserRepositoryInterface) *GameManager {
 	return &GameManager{
 		GameStatus:           idle,
 		Mutex:                sync.Mutex{},
@@ -45,14 +47,6 @@ func NewGameManager() *GameManager {
 		},
 	}
 }
-
-func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context) {
-	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer conn.Close()
 
 // StartNewGame starts a new game session
 func (gm *GameManager) StartNewGame(gameType communication.GameType) error {
@@ -72,7 +66,7 @@ func (gm *GameManager) StartNewGame(gameType communication.GameType) error {
 
 	gm.GameStatus = Active
 	startMessage := communication.StartedMessage{At: time.Now(), Active: true}
-	gm.BroadcastToPis(communication.Start, startMessage)
+	gm.BroadcastPisHandler(communication.Start, startMessage)
 	fmt.Println("Game started")
 	return nil
 }
@@ -84,7 +78,7 @@ func (gm *GameManager) EndGame() {
 	gm.GameStatus = idle
 	gm.CurrentSession = nil
 	endMessage := communication.EndedMessage{At: time.Now()}
-	gm.BroadcastToPis(communication.End, endMessage)
+	gm.BroadcastLeaderBoardHandler(communication.End, endMessage)
 	fmt.Println("Game ended")
 }
 
@@ -149,6 +143,13 @@ func mustJson(v any) json.RawMessage {
 	return b
 }
 
+func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context) {
+	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer conn.Close()
 	gm.Mutex.Lock()
 	gm.WsPis[conn] = true
 	gm.Mutex.Unlock()
