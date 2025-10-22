@@ -116,6 +116,22 @@ func (h *LoginHandler) createToken(username string, isAdmin bool) (string, error
 	return token.SignedString(h.secretKey)
 }
 
+// ParseToken does parse the JWT and returns the claims store in it
+func (h *LoginHandler) ParseToken(tokenString string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return h.secretKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	} else {
+		return nil, fmt.Errorf("invalid token claims")
+	}
+}
+
 func (h *LoginHandler) VerifyToken(tokenString string) error {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return h.secretKey, nil
@@ -130,23 +146,29 @@ func (h *LoginHandler) VerifyToken(tokenString string) error {
 }
 
 func (h *LoginHandler) AuthenticationMiddleware(c *gin.Context) {
-	// Extract the token from the Authorization header
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
 		return
 	}
 
-	// Split the header to get the token part
-	tokenString := strings.Split(authHeader, "Bearer ")[1]
+	parts := strings.Split(authHeader, "Bearer ")
+	if len(parts) != 2 {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization header format"})
+		return
+	}
+	tokenString := parts[1]
 
-	err := h.VerifyToken(tokenString)
-
+	claims, err := h.ParseToken(tokenString)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
 
-	// Token is valid, proceed with the request
+	// Store th claim in the context that is passed to user
+	c.Set("claims", claims)
+	c.Set("username", claims["username"])
+	c.Set("isAdmin", claims["admin"])
+
 	c.Next()
 }
