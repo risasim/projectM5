@@ -38,7 +38,7 @@ func NewGameManager(repo db.UserRepositoryInterface) *GameManager {
 		CurrentSession:       nil,
 		WsLeaderBoards:       make(map[*websocket.Conn]bool),
 		BroadCastLeaderBoard: make(chan []byte),
-		WsPis:                make(map[string]*websocket.Conn),
+		WsPis:                make(map[*websocket.Conn]bool),
 		BroadcastPis:         make(chan []byte),
 		userRepository:       repo,
 		upgrader: websocket.Upgrader{
@@ -66,20 +66,29 @@ func (gm *GameManager) StartNewGame(gameType communication.GameType) error {
 
 	gm.GameStatus = Active
 	startMessage := communication.StartedMessage{At: time.Now(), Active: true}
-	gm.BroadcastPisHandler(communication.Start, startMessage)
+	jsonData, err := json.Marshal(startMessage)
+	if err != nil {
+		return fmt.Errorf("json fuckup")
+	}
+	gm.BroadcastPis <- jsonData
 	fmt.Println("Game started")
 	return nil
 }
 
-func (gm *GameManager) EndGame() {
+func (gm *GameManager) EndGame() error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 
 	gm.GameStatus = idle
 	gm.CurrentSession = nil
 	endMessage := communication.EndedMessage{At: time.Now()}
-	gm.BroadcastLeaderBoardHandler(communication.End, endMessage)
+	jsonData, err := json.Marshal(endMessage)
+	if err != nil {
+		return fmt.Errorf("json fuckup")
+	}
+	gm.BroadcastPis <- jsonData
 	fmt.Println("Game ended")
+	return nil
 }
 
 // AddPlayer to add a player to the current game session
@@ -115,6 +124,7 @@ func (gm *GameManager) RemovePlayer(player Player) error {
 	return fmt.Errorf("error trying to remove player with this ID")
 }
 
+// TODO not really needed
 // SendNewMusicToPi sends new death sound to pi
 func (gm *GameManager) SendNewMusicToPi(username string, b64Sound string, fileName string) error {
 	gm.Mutex.Lock()
