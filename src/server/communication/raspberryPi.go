@@ -43,6 +43,12 @@ type HitData struct {
 	TimeStamp time.Time `json:"timestamp"`
 }
 
+// SetSoundMessage has the Base64 encoded sound data
+type SetSoundMessage struct {
+	SoundName string `json:"soundName"`
+	Base64    string `json:"base64"`
+}
+
 // Message is the actual type that will be decoded into
 type Message struct {
 	MsgType MsgType         `json:"msgtype"`
@@ -58,6 +64,7 @@ const (
 	HitDataMsg
 	HitResponseMsg
 	End
+	SetSound
 )
 
 var (

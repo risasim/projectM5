@@ -35,7 +35,7 @@ func (ffl FreeForAll) generateData() []Player {
 		for _, player := range ffl.session.player {
 			found := false
 			for _, deadPlayer := range ffl.deadPeople {
-				if deadPlayer.id == player.id {
+				if deadPlayer.ID == player.ID {
 					found = true
 					break
 				}
@@ -141,10 +141,10 @@ type Session struct {
 
 // Holds basic player information
 type Player struct {
-	// username is the unique name of the user
-	username string
-	// encodingID is the integer that is encoded by the IR of the assigned PI
-	encodingID uint
-	// id is the unique integer of the player
-	id int
+	// Username is the unique name of the user
+	Username string
+	// EncodingID is the integer that is encoded by the IR of the assigned PI
+	EncodingID uint
+	// ID is the unique integer of the player
+	ID int
 }
