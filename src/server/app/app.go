@@ -2,7 +2,6 @@ package app
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
@@ -14,7 +13,6 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/risasim/projectM5/project/src/server/auth"
-	"github.com/risasim/projectM5/project/src/server/communication"
 	"github.com/risasim/projectM5/project/src/server/db"
 	"github.com/risasim/projectM5/project/src/server/state"
 )
@@ -132,6 +130,7 @@ func (a *App) CreateRoutes() {
 	routes := gin.Default()
 	routes.POST("/auth", a.loginHandler.Login)
 	userController := db.NewUserController(a.DB)
+	endPointHandler := state.NewEndPointHandler(a.DB)
 	routes.POST("/piAuth", a.loginHandler.PiLogin)
 
 	protected := routes.Group("/api")
@@ -140,95 +139,12 @@ func (a *App) CreateRoutes() {
 	protected.GET("/users", userController.GetUsers)
 	protected.POST("/addUser", userController.InsertUser)
 	//For web
-	protected.POST("/uploadSound", func(c *gin.Context) {
-		username := c.Query("username")
-		repo := db.NewUsersRepository(a.DB)
-		user, err := repo.GetUser(username)
-		if err != nil || user == nil {
-			c.JSON(404, gin.H{"error": "User not found in database"})
-			return
-		}
-		if a.GameManager.GameStatus == state.Active {
-			c.JSON(400, gin.H{"error": "Cannot change sound during a game"})
-			return
-		}
-		file, err := c.FormFile("sound")
-		if err != nil {
-			c.JSON(400, gin.H{"error": "Missing sound file"})
-			return
-		}
-		src, err := file.Open()
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Cannot open file"})
-			return
-		}
-		defer src.Close()
-		fileBytes := make([]byte, file.Size)
-		_, err = src.Read(fileBytes)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Cannot read file"})
-			return
-		}
-		b64Sound := base64.StdEncoding.EncodeToString(fileBytes)
-		_, err = a.DB.Exec("UPDATE users SET deathSound=$1 WHERE username=$2", b64Sound, username)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Database deathSound update failed"})
-			return
-		}
-		err = a.GameManager.SendNewMusicToPi(username, b64Sound, file.Filename)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "sendNewMusicToPi failed"})
-			return
-		}
-
-		c.JSON(200, gin.H{"message": "Successfully updated death sound"})
-	})
-	protected.GET("/gameStatus", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": a.GameManager.GameStatus.String()})
-	})
-	protected.POST("/startGame", func(c *gin.Context) {
-		gameTypeString := c.Query("GameType")
-		gameType, _ := communication.ParseGameType(gameTypeString)
-		if a.GameManager.GameStatus == state.Active {
-			c.JSON(400, gin.H{"error": "A game is already active"})
-			return
-		}
-		a.GameManager.StartNewGame(gameType)
-		c.JSON(200, gin.H{"message": "New game started"})
-	})
-	protected.POST("/stopGame", func(c *gin.Context) {
-		a.GameManager.EndGame()
-		c.JSON(200, gin.H{"message": "Game Stopped"})
-	})
-	//protected.POST("/gameStatus") ???
-	protected.DELETE("/user", func(c *gin.Context) {
-		username := c.Query("username")
-		_, err := a.DB.Exec("DELETE FROM users WHERE username=$1", username)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Failed to delete user from Database"})
-			return
-		}
-		c.JSON(200, gin.H{"message": "User deleted"})
-	})
-	protected.POST("joinGame", func(c *gin.Context) {
-		username := c.Query("username")
-		repo := db.NewUsersRepository(a.DB)
-		user, err := repo.GetUser(username)
-		if err != nil {
-			c.JSON(404, gin.H{"error": "User not found in database"})
-		}
-		player := state.Player{
-			Username:   username,
-			ID:         int(user.ID),
-			EncodingID: 0,
-		}
-		err = a.GameManager.AddPlayer(player)
-		if err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(200, gin.H{"message": "Successfully joined game"})
-	})
+	protected.POST("/uploadSound", endPointHandler.UploadSound)
+	protected.GET("/gameStatus", endPointHandler.GetGameStatus)
+	protected.POST("/startGame", endPointHandler.StartGame)
+	protected.POST("/stopGame", endPointHandler.StopGame)
+	protected.DELETE("/user", endPointHandler.DeleteUser)
+	protected.POST("joinGame", endPointHandler.JoinGame)
 	// For pi
 	//protected.GET("/music") connected this to the POST from website
 
