@@ -1,6 +1,8 @@
 package state
 
 import (
+	"encoding/json"
+	"fmt"
 	"sort"
 
 	"github.com/risasim/projectM5/project/src/server/communication"
@@ -8,6 +10,8 @@ import (
 
 // GameMode does prescribe functions that all of the GameModes share
 type GameMode interface {
+	// startGame does all that is needed to run the game
+	startGame()
 	// registerHit() is a function to respond to getting a hit alert from the infrared receiver
 	registerHit(dt communication.HitData) communication.HitResponse
 	// generateData is a function to generate the leaderboard data
@@ -24,36 +28,58 @@ type FreeForAll struct {
 	session Session
 }
 
-func (ffl FreeForAll) registerHit(dt communication.HitData) communication.HitResponse {
-	//TODO implement me
-	panic("implement me")
+// registerHit in freefall does add the user to the death people without reviving
+func (ffl *FreeForAll) registerHit(dt communication.HitData) communication.HitResponse {
+	for i := range ffl.session.player {
+		if ffl.session.player[i].PiSN == dt.Victim {
+			ffl.deadPeople = append(ffl.deadPeople, ffl.session.player[i])
+			return communication.HitResponse{
+				PlaySound: true,
+				SoundName: ffl.session.player[i].DeathSound,
+				Dead:      true,
+				Revive:    false,
+				ReviveIn:  0,
+			}
+		}
+	}
+	return communication.HitResponse{}
 }
 
-// generateDate Ensures everyone is in the dead poeple array and then reverses it for the leaderboard
-func (ffl FreeForAll) generateData() []Player {
-	//if len(ffl.deadPeople) != len(ffl.session.player) {
-	//	for _, player := range ffl.session.player {
-	//		found := false
-	//		for _, deadPlayer := range ffl.deadPeople {
-	//			if deadPlayer.piSN == player.piSN {
-	//				found = true
-	//				break
-	//			}
-	//		}
-	//		if !found {
-	//			ffl.deadPeople = append(ffl.deadPeople, player)
-	//		}
-	//	}
-	//}
-	//for i, j := 0, len(ffl.deadPeople)-1; i < j; i, j = i+1, j-1 {
-	//	ffl.deadPeople[i], ffl.deadPeople[j] = ffl.deadPeople[j], ffl.deadPeople[i]
-	//}
-	//return ffl.deadPeople
-	panic("implement me")
+// generateData Ensures everyone is in the dead poeple array and then reverses it for the leaderboard
+func (ffl *FreeForAll) generateData() communication.LeaderboardMessage {
+	dead := make([]communication.LeaderboardPlayer, len(ffl.deadPeople))
+	for i, player := range ffl.deadPeople {
+		dead[i] = communication.LeaderboardPlayer{
+			Username: player.Username,
+		}
+	}
+
+	details := communication.FreefallLeaderboard{
+		DeadPlayers: dead,
+	}
+
+	players := make([]communication.LeaderboardPlayer, len(ffl.session.player))
+	for i, player := range ffl.session.player {
+		players[i] = communication.LeaderboardPlayer{
+			Username: player.Username,
+		}
+	}
+
+	jsonRaw, err := json.Marshal(details)
+	if err != nil {
+		fmt.Println("Error marshalling response:", err)
+	}
+
+	res := communication.LeaderboardMessage{
+		GameType: communication.Freefall,
+		Data:     jsonRaw,
+		Players:  players,
+	}
+	return res
 }
 
 // finished returns true if the array length of dead people matches the array length of the player array in the session
-func (ffl FreeForAll) finished() bool {
+func (ffl *FreeForAll) finished() bool {
 	return len(ffl.deadPeople) == len(ffl.session.player)
 }
 
@@ -68,13 +94,13 @@ type TeamDeathMatch struct {
 	session Session
 }
 
-func (tdm TeamDeathMatch) registerHit(dt communication.HitData) communication.HitResponse {
+func (tdm *TeamDeathMatch) registerHit(dt communication.HitData) communication.HitResponse {
 	//TODO implement me
 	panic("implement me")
 }
 
 // generateData sorts teams by score and returns team names in order
-func (tdm TeamDeathMatch) generateData() []string {
+func (tdm *TeamDeathMatch) generateData() []string {
 	sort.Slice(tdm.teams, func(i, j int) bool {
 		return tdm.teams[i].score > tdm.teams[j].score
 	})
@@ -86,7 +112,7 @@ func (tdm TeamDeathMatch) generateData() []string {
 }
 
 // finished is the condition to determine if the TeamDeathMatch GameMode is finished
-func (tdm TeamDeathMatch) finished() bool {
+func (tdm *TeamDeathMatch) finished() bool {
 	// Checking the status of the session to determine if the game is finished
 	//if tdm.session.status == idle {
 	//	return true
@@ -115,13 +141,13 @@ type Infected struct {
 	session Session
 }
 
-func (inf Infected) registerHit(dt communication.HitData) communication.HitResponse {
+func (inf *Infected) registerHit(dt communication.HitData) communication.HitResponse {
 	//TODO implement me
 	panic("implement me")
 }
 
 // generateData returns reversed list of infected people as people are added as they get infected
-func (inf Infected) generateData() []Player {
+func (inf *Infected) generateData() []Player {
 	for i, j := 0, len(inf.infectedPeople)-1; i < j; i, j = i+1, j-1 {
 		inf.infectedPeople[i], inf.infectedPeople[j] = inf.infectedPeople[j], inf.infectedPeople[i]
 	}
@@ -129,7 +155,7 @@ func (inf Infected) generateData() []Player {
 }
 
 // finished returns true if the array length of infected people matches the array length of the player array in the session
-func (inf Infected) finished() bool {
+func (inf *Infected) finished() bool {
 	return len(inf.infectedPeople) == len(inf.session.player)
 }
 

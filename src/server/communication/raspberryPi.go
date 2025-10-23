@@ -12,8 +12,6 @@ type StartedMessage struct {
 	At time.Time `json:"at"`
 	// Active is flag to determine if the pi is active or waits for activation
 	Active bool `json:"active"`
-	// GameId is id for the exact player that will then annouce the dead
-	GameId int `json:"gameId"`
 }
 
 // EndedMessage is message sent after the end of the game to all players
@@ -37,10 +35,8 @@ type HitResponse struct {
 
 // HitData does store data passed from the pi about a hit
 type HitData struct {
-	// victim is the id of the Player who is sending the data about being shot
-	Victim int `json:"victim"`
-	// shooter is the id of the Player who has sent the IR signal and hit the receiver
-	Shooter int `json:"shooter"`
+	// victim is the serial number of Pi of the Player who is sending the data about being shot
+	Victim string `json:"victim"`
 	// timeStamp of the shot being registered
 	TimeStamp time.Time `json:"timestamp"`
 }

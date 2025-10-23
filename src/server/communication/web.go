@@ -17,7 +17,7 @@ type LeaderboardMessage struct {
 // FreefallLeaderboard is leaderboard sent to
 type FreefallLeaderboard struct {
 	// deadPlayers are the players that has been killed
-	deadPlayers []LeaderboardPlayer
+	DeadPlayers []LeaderboardPlayer
 }
 
 // TeamDeathMatchLeaderboard is for deathmatch passing to json
