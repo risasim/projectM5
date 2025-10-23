@@ -55,7 +55,7 @@ func (m MockUserRepository) InsertUser(user model.PostUser, apiKey string, isAdm
 		IsAdmin:    isAdmin,
 		Username:   user.Username,
 		Password:   user.Password,
-		DeathSound: sqlNullString(user.DeathSound),
+		DeathSound: user.DeathSound,
 		PiSN:       sqlNullString(user.PiSN),
 		ApiKey:     sqlNullString(apiKey),
 	}

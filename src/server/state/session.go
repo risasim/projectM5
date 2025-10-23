@@ -147,4 +147,6 @@ type Player struct {
 	EncodingID uint
 	// ID is the unique integer of the player
 	ID int
+	// DeathSound is the name of the file that needs to add
+	DeathSound string
 }

@@ -23,6 +23,9 @@ func (u UserController) InsertUser(g *gin.Context) {
 	if err := g.ShouldBindJSON(&user); err == nil {
 		hash, _ := HashPassword(user.Password)
 		user.Password = hash
+		if user.DeathSound == "" {
+			user.DeathSound = "default.mp3"
+		}
 		usersRepo := NewUsersRepository(db)
 		apiKey := uuid.New().String()
 		insert := usersRepo.InsertUser(user, apiKey, false)
