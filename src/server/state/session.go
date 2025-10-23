@@ -31,24 +31,25 @@ func (ffl FreeForAll) registerHit(dt communication.HitData) communication.HitRes
 
 // generateDate Ensures everyone is in the dead poeple array and then reverses it for the leaderboard
 func (ffl FreeForAll) generateData() []Player {
-	if len(ffl.deadPeople) != len(ffl.session.player) {
-		for _, player := range ffl.session.player {
-			found := false
-			for _, deadPlayer := range ffl.deadPeople {
-				if deadPlayer.ID == player.ID {
-					found = true
-					break
-				}
-			}
-			if !found {
-				ffl.deadPeople = append(ffl.deadPeople, player)
-			}
-		}
-	}
-	for i, j := 0, len(ffl.deadPeople)-1; i < j; i, j = i+1, j-1 {
-		ffl.deadPeople[i], ffl.deadPeople[j] = ffl.deadPeople[j], ffl.deadPeople[i]
-	}
-	return ffl.deadPeople
+	//if len(ffl.deadPeople) != len(ffl.session.player) {
+	//	for _, player := range ffl.session.player {
+	//		found := false
+	//		for _, deadPlayer := range ffl.deadPeople {
+	//			if deadPlayer.piSN == player.piSN {
+	//				found = true
+	//				break
+	//			}
+	//		}
+	//		if !found {
+	//			ffl.deadPeople = append(ffl.deadPeople, player)
+	//		}
+	//	}
+	//}
+	//for i, j := 0, len(ffl.deadPeople)-1; i < j; i, j = i+1, j-1 {
+	//	ffl.deadPeople[i], ffl.deadPeople[j] = ffl.deadPeople[j], ffl.deadPeople[i]
+	//}
+	//return ffl.deadPeople
+	panic("implement me")
 }
 
 // finished returns true if the array length of dead people matches the array length of the player array in the session
@@ -144,7 +145,7 @@ type Player struct {
 	// Username is the unique name of the user
 	Username string
 	// ID is the unique integer of the player
-	ID int
+	PiSN string
 	// DeathSound is the name of the file that needs to add
 	DeathSound string
 }

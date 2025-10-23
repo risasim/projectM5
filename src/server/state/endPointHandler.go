@@ -96,7 +96,7 @@ func (e EndPointHandler) JoinGame(c *gin.Context) {
 	}
 	player := Player{
 		Username:   username,
-		ID:         int(user.ID),
+		PiSN:       user.PiSN,
 		DeathSound: user.DeathSound,
 	}
 	err = e.GameManager.AddPlayer(player)
