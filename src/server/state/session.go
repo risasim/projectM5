@@ -3,8 +3,6 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
-
 	"github.com/risasim/projectM5/project/src/server/communication"
 )
 
@@ -88,6 +86,8 @@ func (ffl *FreeForAll) finished() bool {
 type TeamDeathMatch struct {
 	// time is session time in minutes
 	time int
+	// divisions is map from the players to the
+	divisions map[string]*Team
 	// teams is an Array of all teams in the session
 	teams []Team
 	// session that is the GameMode played in
@@ -95,30 +95,94 @@ type TeamDeathMatch struct {
 }
 
 func (tdm *TeamDeathMatch) registerHit(dt communication.HitData) communication.HitResponse {
-	//TODO implement me
-	panic("implement me")
+	tdm.divisions[dt.Victim].score -= 100
+	for i := range tdm.session.player {
+		if tdm.session.player[i].PiSN == dt.Victim {
+			return communication.HitResponse{
+				PlaySound: true,
+				SoundName: tdm.session.player[i].DeathSound,
+				Dead:      true,
+				Revive:    true,
+				ReviveIn:  30,
+			}
+		}
+	}
+	return communication.HitResponse{}
 }
 
 // generateData sorts teams by score and returns team names in order
-func (tdm *TeamDeathMatch) generateData() []string {
-	sort.Slice(tdm.teams, func(i, j int) bool {
-		return tdm.teams[i].score > tdm.teams[j].score
-	})
-	var teamOrderedName []string
-	for _, team := range tdm.teams {
-		teamOrderedName = append(teamOrderedName, team.name)
+func (tdm *TeamDeathMatch) generateData() communication.LeaderboardMessage {
+	teams := make([]communication.DeathMatchTeam, len(tdm.teams))
+
+	for i, team := range tdm.teams {
+		members := make([]communication.LeaderboardPlayer, len(team.members))
+		for _, member := range team.members {
+			members = append(members, communication.LeaderboardPlayer{
+				Username: member.Username,
+			})
+		}
+		teams[i] = communication.DeathMatchTeam{
+			Name:    team.name,
+			Members: members,
+			Score:   team.score,
+		}
 	}
-	return teamOrderedName
+
+	data := communication.TeamDeathMatchLeaderboard{
+		Teams: teams,
+	}
+
+	players := make([]communication.LeaderboardPlayer, len(tdm.session.player))
+	for i, player := range tdm.session.player {
+		players[i] = communication.LeaderboardPlayer{
+			Username: player.Username,
+		}
+	}
+
+	jsonRaw, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshalling response:", err)
+	}
+
+	res := communication.LeaderboardMessage{
+		GameType: communication.TeamDeathmatch,
+		Data:     jsonRaw,
+		Players:  players,
+	}
+
+	return res
 }
 
 // finished is the condition to determine if the TeamDeathMatch GameMode is finished
 func (tdm *TeamDeathMatch) finished() bool {
-	// Checking the status of the session to determine if the game is finished
-	//if tdm.session.status == idle {
-	//	return true
-	//}
-	//return false
+	for i := range tdm.teams {
+		if tdm.teams[i].score <= 0 {
+			return true
+		}
+	}
 	return false
+}
+
+// startGame does initilise the game by splitting the users into two teams
+func (tdm *TeamDeathMatch) startGame() {
+	team1 := Team{
+		score:   1500,
+		name:    "kittens",
+		members: make([]Player, 0),
+	}
+
+	team2 := Team{
+		score:   1500,
+		name:    "mittens",
+		members: make([]Player, 0),
+	}
+	for i := range tdm.session.player {
+		if i%2 == 0 {
+			team1.members = append(team1.members, tdm.session.player[i])
+		} else {
+			team2.members = append(team2.members, tdm.session.player[i])
+		}
+	}
 }
 
 // Team are the collaborating players,they cannot kill each other

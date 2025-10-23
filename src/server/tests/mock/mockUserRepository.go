@@ -56,14 +56,12 @@ func (m MockUserRepository) InsertUser(user model.PostUser, apiKey string, isAdm
 		Username:   user.Username,
 		Password:   user.Password,
 		DeathSound: user.DeathSound,
-		PiSN:       sqlNullString(user.PiSN),
+		PiSN:       user.PiSN,
 		ApiKey:     sqlNullString(apiKey),
 	}
 	m.users[user.Username] = newUser
 
-	if newUser.PiSN.Valid {
-		m.usersByPi[newUser.PiSN.String] = &newUser
-	}
+	m.usersByPi[newUser.PiSN] = &newUser
 
 	m.autoid++
 	return true
