@@ -49,14 +49,21 @@ func (e EndPointHandler) GetGameStatus(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "success", "Game_Status": e.GameManager.GameStatus.String()})
 }
 
+type StartGameRequest struct {
+	GameType communication.GameType `json:"game_type"`
+}
+
 func (e EndPointHandler) StartGame(c *gin.Context) {
-	gameTypeString := c.Query("GameType")
-	gameType, _ := communication.ParseGameType(gameTypeString)
+	var req StartGameRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid request", "details": err.Error()})
+		return
+	}
 	if e.GameManager.GameStatus == Active {
 		c.JSON(400, gin.H{"error": "A game is already active"})
 		return
 	}
-	err := e.GameManager.StartNewGame(gameType)
+	err := e.GameManager.StartNewGame(req.GameType)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to start game", "details": err.Error()})
 		return
