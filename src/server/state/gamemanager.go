@@ -148,22 +148,51 @@ func (gm *GameManager) WsPisHandler(c *gin.Context) {
 
 }
 
-func (gm *GameManager) handleConnection(conn *websocket.Conn) {
+// handlePiConnection does listen to being hit and in case that
+func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
+	defer conn.Close()
+
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("Error reading message:", err)
 			break
 		}
-		fmt.Printf("Received: %s\n", message)
-		//React to message
-		// switch based on the message
 
-		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+		fmt.Printf("Received: %s\n", message)
+
+		var hitData communication.HitData
+		if err := json.Unmarshal(message, &hitData); err != nil {
+			fmt.Println("Error unmarshalling hit data:", err)
+			continue
+		}
+
+		res := gm.Game.registerHit(hitData)
+
+		responseJSON, err := json.Marshal(res)
+		if err != nil {
+			fmt.Println("Error marshalling response:", err)
+			continue
+		}
+
+		if err := conn.WriteMessage(websocket.TextMessage, responseJSON); err != nil {
 			fmt.Println("Error writing message:", err)
 			break
 		}
 	}
+}
+
+// updateLeaderBoard does send the generated data about the game into the broadcast of the leaderboards
+func (gm *GameManager) updateLeaderBoard() {
+	gm.Mutex.Lock()
+	defer gm.Mutex.Unlock()
+	update := gm.Game.generateData()
+	responseJSON, err := json.Marshal(update)
+	if err != nil {
+		fmt.Println("Error marshalling response:", err)
+		return
+	}
+	gm.BroadCastLeaderBoard <- responseJSON
 }
 
 // BroadcastPisHandler does broadcast to all pis

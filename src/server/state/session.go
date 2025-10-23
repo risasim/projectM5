@@ -9,9 +9,9 @@ import (
 // GameMode does prescribe functions that all of the GameModes share
 type GameMode interface {
 	// registerHit() is a function to respond to getting a hit alert from the infrared receiver
-	registerHit() communication.HitResponse
+	registerHit(dt communication.HitData) communication.HitResponse
 	// generateData is a function to generate the leaderboard data
-	generateData() any
+	generateData() communication.LeaderboardMessage
 	// finished is the function to determine if any GameMode is finished
 	finished() bool
 }
@@ -24,7 +24,7 @@ type FreeForAll struct {
 	session Session
 }
 
-func (ffl FreeForAll) registerHit() communication.HitResponse {
+func (ffl FreeForAll) registerHit(dt communication.HitData) communication.HitResponse {
 	//TODO implement me
 	panic("implement me")
 }
@@ -67,7 +67,7 @@ type TeamDeathMatch struct {
 	session Session
 }
 
-func (tdm TeamDeathMatch) registerHit() communication.HitResponse {
+func (tdm TeamDeathMatch) registerHit(dt communication.HitData) communication.HitResponse {
 	//TODO implement me
 	panic("implement me")
 }
@@ -114,7 +114,7 @@ type Infected struct {
 	session Session
 }
 
-func (inf Infected) registerHit() communication.HitResponse {
+func (inf Infected) registerHit(dt communication.HitData) communication.HitResponse {
 	//TODO implement me
 	panic("implement me")
 }
