@@ -89,20 +89,25 @@ class ReceiverThread(Thread):
     def run(self):
         pass
 
-
+#
+#Class representing the thread which runs the transmitter logic.
+#Edit run() to alter the functionality of the thread. __init__ can be edited to add properties or instantiate other classes.
+#
 class TransmitterThread(Thread):
     def __init__(self,webc):
         pass
     def run(self):
         pass
 
+#Instantiates the first class WebClient, passing the given url as a paramater. 
 url = "whatdahellyurl.com"
 client = WebClient(url)
+
 
 try:
     client.start()
 except KeyboardInterrupt:
-    print("Interruption occured.")
+    print("Interruption Occured.")
 finally:
     client.stop()
 
