@@ -4,23 +4,23 @@
       <img src="@/assets/phosho-coollogo_com.png" alt="Logo" class="header-title" /> 
     </router-link>
 
-    <!-- Conditional buttons -->
-    <router-link 
-      v-if="isHomePage" 
-      to="/login" 
-      class="login-button"
-    >
-      Log In
-    </router-link>
+    <div v-if="isHomePage">
+      <router-link 
+        v-if="!isAuthenticated" 
+        to="/login" 
+        class="login-button"
+      >
+        Log In
+      </router-link>
 
-    <button 
-      v-else-if="showLogoutButton" 
-      @click="toggleLogoutSure" 
-      class="logout-button"
-    >
-      Log Out
-    </button>
-
+      <button 
+        v-else 
+        @click="toggleLogoutSure" 
+        class="logout-button"
+      >
+        Log Out
+      </button>
+    </div>
 
     <div 
       v-if="showLogoutSure" 
@@ -44,8 +44,9 @@ export default {
   name: 'AppHeader',
   data() {
     return {
-      showLogoutSure: false
-    }
+      showLogoutSure: false,
+      isAuthenticated: false
+    };
   },
   computed: {
     currentPath() {
@@ -53,23 +54,38 @@ export default {
     },
     isHomePage() {
       return this.currentPath === '/';
-    },
-    showLogoutButton() {
-      return this.currentPath !== '/login' && this.currentPath !== '/leaderboard-tdm' && this.currentPath !== '/leaderboard-ffa' && this.currentPath !== '/leaderboard-inf' && this.currentPath !== '/leaderboard' && this.currentPath !== '/';
     }
   },
+  mounted() {
+    this.checkAuthStatus();
+    window.addEventListener('storage', this.checkAuthStatus);
+  },
+  beforeUnmount() {
+    window.removeEventListener('storage', this.checkAuthStatus);
+  },
   methods: {
+    checkAuthStatus() {
+      const token = localStorage.getItem('authToken');
+      this.isAuthenticated = !!token;
+    },
     toggleLogoutSure() {
       this.showLogoutSure = !this.showLogoutSure;
     },
     confirmLogout() {
       localStorage.clear();
+      this.isAuthenticated = false;
+      this.showLogoutSure = false;
       console.log('User logged out');
-      this.toggleLogoutSure();
       this.$router.push('/');
+      location.reload();
+    }
+  },
+  watch: {
+    $route() {
+      this.checkAuthStatus();
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -185,25 +201,24 @@ export default {
   transform: scale(1.05);
 }
 
-
 @media (max-width: 600px) {
   .header-gradient {
-    justify-content: center; 
-    padding: 0; 
-    height: 70px; 
+    justify-content: center;
+    padding: 0;
+    height: 70px;
   }
 
   .header-title {
-    width: 250px; 
+    width: 250px;
   }
 
-  .login-button {
+  .login-button,
+  .logout-button {
     position: absolute;
-    right: 2px;    
-    top: 30px;
-    padding: 3px 10px;
-    font-size: 0.85rem;
+    right: 10px;
+    top: 20px;
+    padding: 5px 12px;
+    font-size: 0.9rem;
   }
 }
-
 </style>
