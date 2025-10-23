@@ -2,6 +2,7 @@ package state
 
 import (
 	"database/sql"
+
 	"github.com/gin-gonic/gin"
 	"github.com/risasim/projectM5/project/src/server/communication"
 	"github.com/risasim/projectM5/project/src/server/db"
@@ -37,7 +38,7 @@ func (e EndPointHandler) UploadSound(c *gin.Context) {
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to save filename to database", "details": err.Error()})
 	}
-	err = c.SaveUploadedFile(file, "src/server/soundEffects"+file.Filename)
+	err = c.SaveUploadedFile(file, "/src/server/soundEffects"+file.Filename)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to save file", "details": err.Error()})
 		return

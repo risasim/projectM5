@@ -99,7 +99,7 @@ func (gm *GameManager) AddPlayer(player Player) error {
 
 	// Checking if a player is already in the game session
 	for _, p := range gm.CurrentSession.player {
-		if p.ID == player.ID {
+		if p.PiSN == player.PiSN {
 			return fmt.Errorf("a player with this ID is already in the game")
 		}
 	}
@@ -113,7 +113,7 @@ func (gm *GameManager) RemovePlayer(player Player) error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 	for i, p := range gm.CurrentSession.player {
-		if p.ID == player.ID {
+		if p.PiSN == player.PiSN {
 			gm.CurrentSession.player = append(gm.CurrentSession.player[:i], gm.CurrentSession.player[i+1:]...)
 			return nil
 		}
