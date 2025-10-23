@@ -124,35 +124,6 @@ func (gm *GameManager) RemovePlayer(player Player) error {
 	return fmt.Errorf("error trying to remove player with this ID")
 }
 
-// TODO not really needed
-// SendNewMusicToPi sends new death sound to pi
-func (gm *GameManager) SendNewMusicToPi(username string, b64Sound string, fileName string) error {
-	gm.Mutex.Lock()
-	conn, ok := gm.WsPis[username]
-	gm.Mutex.Unlock()
-	if !ok {
-		return fmt.Errorf("pi not connected for %s", username)
-	}
-	message := communication.SetSoundMessage{
-		SoundName: fileName,
-		Base64:    b64Sound,
-	}
-
-	data, _ := json.Marshal(communication.Message{
-		MsgType: communication.SetSound,
-		Data:    mustJson(message),
-	})
-
-	gm.Mutex.Lock()
-	defer gm.Mutex.Unlock()
-	return conn.WriteMessage(websocket.TextMessage, data)
-}
-
-func mustJson(v any) json.RawMessage {
-	b, _ := json.Marshal(v)
-	return b
-}
-
 func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context) {
 	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
