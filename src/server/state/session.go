@@ -143,8 +143,6 @@ type Session struct {
 type Player struct {
 	// Username is the unique name of the user
 	Username string
-	// EncodingID is the integer that is encoded by the IR of the assigned PI
-	EncodingID uint
 	// ID is the unique integer of the player
 	ID int
 	// DeathSound is the name of the file that needs to add
