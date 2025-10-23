@@ -144,7 +144,7 @@ func (a *App) CreateRoutes() {
 	protected.POST("/startGame", endPointHandler.StartGame)
 	protected.POST("/stopGame", endPointHandler.StopGame)
 	protected.DELETE("/user", endPointHandler.DeleteUser)
-	protected.POST("joinGame", endPointHandler.JoinGame)
+	protected.POST("/joinGame", endPointHandler.JoinGame)
 	// For pi
 	//protected.GET("/music") connected this to the POST from website
 
