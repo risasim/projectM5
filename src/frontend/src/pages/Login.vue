@@ -3,17 +3,15 @@
     <div class="login-page">
       <div class="login-box">
         <h1 class="login-title">Login</h1>
-        <form class="login-form">
+        <form class="login-form" @submit.prevent>
 
+              <input v-model="username" type="text" placeholder="Username" class="login-input" />
+              <input v-model="password" type="password" placeholder="Password" class="login-input" />
 
-          <input type="text" placeholder="Username" class="login-input" />
+              <button type="button" class="login-button" @click="loginUser(false)">Log In</button>
+              <button type="button" class="login-button" @click="loginUser(true)">Log In (admin)</button>
 
-
-          <input type="password" placeholder="Password" class="login-input" />
-
-
-          <router-link to="/userboard"><button type="submit" class="login-button">Log In</button></router-link>
-          <router-link to="/adminboard"><button type="submit" class="login-button">Log In (admin)</button></router-link>
+              <p v-if="errorMessage" style="color:red">{{ errorMessage }}</p>
         </form>
       </div>
     </div>
@@ -23,40 +21,54 @@
 <script>
 export default {
   name: 'AppLogin',
+  data() {
+    return {
+      username: '',
+      password: '',
+      errorMessage: '',
+      isLoading: false
+    };
+  },
   methods: {
-    loginUser() {
+    async loginUser(isAdmin = false) {
       this.errorMessage = '';
-      this.successMessage = '';
       this.isLoading = true;
-      // SECURITY
-      const usernameResult = InputSanitizer.sanitizeUsername(this.username);
-      if (!usernameResult.valid) {
-        this.errorMessage = usernameResult.error;
-        this.isLoading = false;
-        return;
-      }
 
-      if (!this.password || this.password.trim().length === 0) {
-        this.errorMessage = 'Password cannot be empty';
-        this.isLoading = false;
-        return;
-      }
+      try {
+        //get the token
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: this.username,
+            password: this.password
+          })
+        });
 
-      if (this.password.length > 50) {
-        this.errorMessage = 'Password too long';
-        this.isLoading = false;
-        return;
-      }
+        if (!response.ok) throw new Error('Login failed');
+        const data = await response.json();
 
-      if (InputSanitizer.containsCommandInjection(this.password)) {
-        this.errorMessage = 'Password contains dangerous characters';
+        // Store token
+        localStorage.setItem('authToken', data.token);
+        console.log('Token stored:', data.token);
+
+        // Redirect
+        if (isAdmin) {
+          this.$router.push('/adminboard');
+        } else {
+          this.$router.push('/userboard');
+        }
+      } catch (err) {
+        this.errorMessage = 'Invalid credentials or server error.';
+        console.error(err);
+      } finally {
         this.isLoading = false;
-        return;
       }
     }
   }
 };
 </script>
+
 
 <style scoped>
 .page-container {
