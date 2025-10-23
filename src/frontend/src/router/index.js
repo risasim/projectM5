@@ -66,4 +66,20 @@ const router = createRouter({
   routes
 })
 
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('authToken');
+  
+  // routes that require authentication
+  const protectedRoutes = ['/userboard', '/adminboard', '/adminedit'];
+
+  if (protectedRoutes.includes(to.path) && !token) {
+    // No token? Redirect to login
+    next('/login');
+  } else {
+    next(); // Proceed normally
+  }
+});
+
+
 export default router;
