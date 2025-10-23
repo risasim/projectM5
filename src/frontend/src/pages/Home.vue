@@ -5,12 +5,13 @@
         <img src="@/assets/phosho-coollogo_com-blackbg.png" alt="Logo" class="home-logo" />
 
         <div class="button-group">
-          <router-link to="/userboard">
-            <button class="userboard-btn">Userboard</button>
-          </router-link>
-          <router-link to="/leaderboard">
-            <button class="leaderboard-btn">Leaderboard</button>
-          </router-link>
+          <button class="userboard-btn" @click="goToBoard">
+            {{ isAdmin ? "Adminboard" : "Userboard" }}
+          </button>
+
+          <button class="leaderboard-btn" @click="goToLeaderboard">
+            Leaderboard
+          </button>
         </div>
 
         <div class="info-section">
@@ -24,7 +25,7 @@
           <div class="info-card2">
             <h1 class="info-title">Welcome to PhoSho</h1>
             <p class="info-content">
-              PhoSho is a laser-tag game brought to you by Group 29! It works with Infared Lasers so it is completely safe to play with.
+              PhoSho is a laser-tag game brought to you by Group 29! It works with infrared lasers so it is completely safe to play with.
               Shoot those photons and gain those points on your profile! Hope you have fun!
             </p>
           </div>
@@ -32,7 +33,7 @@
           <div class="info-card3">
             <h2 class="info-title">Raspberry Pi</h2>
             <p class="info-content">
-              We have a Raspberry Pi connected to the sensor on your vest, and to the Infared gun.
+              We have a Raspberry Pi connected to the sensor on your vest and to the infrared gun.
             </p>
           </div>
         </div>
@@ -43,9 +44,49 @@
 
 <script>
 export default {
-  name: 'HomePage'
-}
+  name: 'HomePage',
+  data() {
+    return {
+      isAdmin: false, 
+      selectedGameMode: localStorage.getItem("selectedGameMode") || "FreeFall" //default FFA
+    };
+  },
+  mounted() {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        this.isAdmin = payload.username === "admin" || payload.role === "admin";
+      } catch {
+        console.warn("Invalid token format");
+      }
+    }
+  },
+  methods: {
+    goToBoard() {
+      if (this.isAdmin) {
+        this.$router.push('/adminboard');
+      } else {
+        this.$router.push('/userboard');
+      }
+    },
+    goToLeaderboard() {
+      // will be replaced with live socket logic, placeholder
+      const gameMode = this.selectedGameMode;
+      if (gameMode === 'FreeFall') {
+        this.$router.push('/leaderboard-ffa');
+      } else if (gameMode === 'Infected') {
+        this.$router.push('/leaderboard-inf');
+      } else if (gameMode === 'Team Deathmatch') {
+        this.$router.push('/leaderboard-tdm');
+      } else {
+        this.$router.push('/leaderboard');
+      }
+    }
+  }
+};
 </script>
+
 
 <style scoped>
 .home-page {
