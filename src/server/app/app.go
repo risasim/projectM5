@@ -175,11 +175,6 @@ func (a *App) CreateRoutes() {
 			c.JSON(500, gin.H{"error": "Database deathSound update failed"})
 			return
 		}
-		err = a.GameManager.SendNewMusicToPi(username, b64Sound, file.Filename)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "sendNewMusicToPi failed"})
-			return
-		}
 
 		c.JSON(200, gin.H{"message": "Successfully updated death sound"})
 	})

@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/risasim/projectM5/project/src/server/communication"
-	"github.com/risasim/projectM5/project/src/server/db"
 )
 
 type GameManager struct {
@@ -25,13 +24,12 @@ type GameManager struct {
 	// BroadcastPis is a channel that will broadcast messages to all of the leaderboards -> all of them
 	BroadcastPis chan []byte
 	// Game is actual game data
-	Game           GameMode
-	upgrader       websocket.Upgrader
-	userRepository db.UserRepositoryInterface
+	Game     GameMode
+	upgrader websocket.Upgrader
 }
 
 // NewGameManager initializes a new GameManager
-func NewGameManager(repo db.UserRepositoryInterface) *GameManager {
+func NewGameManager() *GameManager {
 	return &GameManager{
 		GameStatus:           idle,
 		Mutex:                sync.Mutex{},
@@ -40,7 +38,6 @@ func NewGameManager(repo db.UserRepositoryInterface) *GameManager {
 		BroadCastLeaderBoard: make(chan []byte),
 		WsPis:                make(map[*websocket.Conn]bool),
 		BroadcastPis:         make(chan []byte),
-		userRepository:       repo,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
