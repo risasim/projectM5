@@ -1,3 +1,4 @@
+
 <template>
   <div class="page-container">
     <div class="login-page">
@@ -19,6 +20,8 @@
 </template>
 
 <script>
+import { sanitizeUsername, sanitizePassword } from '@/utils/loginSanitizer'
+
 export default {
   name: 'AppLogin',
   data() {
@@ -31,26 +34,36 @@ export default {
   },
   methods: {
     async loginUser(isAdmin = false) {
-      this.errorMessage = '';
-      this.isLoading = true;
+      this.errorMessage = ''
+      this.isLoading = true
+
+      // sanitize the input before sending
+      const user = sanitizeUsername(this.username)
+      const pass = sanitizePassword(this.password)
+
+      if (!user.valid || !pass.valid) {
+        this.errorMessage = user.error || pass.error
+        this.isLoading = false
+        return
+      }
 
       try {
-        //get the token
+        // get the token
         const response = await fetch('/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: this.username,
-            password: this.password
+            username: user.value,
+            password: pass.value
           })
-        });
+        })
 
-        if (!response.ok) throw new Error('Login failed');
-        const data = await response.json();
+        if (!response.ok) throw new Error('Login failed')
+        const data = await response.json()
 
-        // Store token
-        localStorage.setItem('authToken', data.token);
-        console.log('Token stored:', data.token);
+        // Store token 
+        localStorage.setItem('authToken', data.token)
+        console.log('Token stored:', data.token)
 
         // Redirect
         if (isAdmin) {
@@ -68,7 +81,6 @@ export default {
   }
 };
 </script>
-
 
 <style scoped>
 .page-container {
