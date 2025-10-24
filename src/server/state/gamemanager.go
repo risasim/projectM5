@@ -31,7 +31,7 @@ type GameManager struct {
 // NewGameManager initializes a new GameManager
 func NewGameManager() *GameManager {
 	return &GameManager{
-		GameStatus:           idle,
+		GameStatus:           Idle,
 		Mutex:                sync.Mutex{},
 		CurrentSession:       nil,
 		WsLeaderBoards:       make(map[*websocket.Conn]bool),
@@ -45,13 +45,16 @@ func NewGameManager() *GameManager {
 	}
 }
 
-// StartNewGame starts a new game session
-func (gm *GameManager) StartNewGame(gameType communication.GameType) error {
+// CreateNewGame starts a new game session
+func (gm *GameManager) CreateNewGame(gameType communication.GameType) error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 
-	if gm.GameStatus != idle {
-		return fmt.Errorf("a game is already in active")
+	if gm.GameStatus == Created {
+		return fmt.Errorf("a game is already active")
+	}
+	if gm.GameStatus == Started {
+		return fmt.Errorf("a game has already started")
 	}
 
 	// Initialise a new game session
@@ -61,14 +64,21 @@ func (gm *GameManager) StartNewGame(gameType communication.GameType) error {
 		GameType: gameType,
 	}
 
-	gm.GameStatus = Active
+	gm.GameStatus = Created
+	fmt.Println("Game created")
+	return nil
+}
+
+func (gm *GameManager) StartGame() error {
+	gm.Mutex.Lock()
+	defer gm.Mutex.Unlock()
+	gm.GameStatus = Started
 	startMessage := communication.StartedMessage{At: time.Now(), Active: true}
 	jsonData, err := json.Marshal(startMessage)
 	if err != nil {
-		return fmt.Errorf("json fuckup")
+		return fmt.Errorf("json messud up innit")
 	}
 	gm.BroadcastPis <- jsonData
-	fmt.Println("Game started")
 	return nil
 }
 
@@ -76,7 +86,7 @@ func (gm *GameManager) EndGame() error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 
-	gm.GameStatus = idle
+	gm.GameStatus = Idle
 	gm.CurrentSession = nil
 	endMessage := communication.EndedMessage{At: time.Now()}
 	jsonData, err := json.Marshal(endMessage)
@@ -93,8 +103,11 @@ func (gm *GameManager) AddPlayer(player Player) error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 
-	if gm.GameStatus != Active {
-		return fmt.Errorf("a game is already in active")
+	if gm.GameStatus == Idle {
+		return fmt.Errorf("there is no game to join")
+	}
+	if gm.GameStatus == Started {
+		return fmt.Errorf("a game has already started")
 	}
 
 	// Checking if a player is already in the game session
@@ -238,13 +251,15 @@ func (gm *GameManager) BroadcastLeaderBoardHandler() {
 type GameStatus int
 
 const (
-	idle GameStatus = iota
-	Active
+	Idle GameStatus = iota
+	Created
+	Started
 )
 
 var statusName = map[GameStatus]string{
-	idle:   "idle",
-	Active: "active",
+	Idle:    "idle",
+	Created: "created",
+	Started: "started",
 }
 
 func (gs GameStatus) String() string {

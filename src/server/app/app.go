@@ -141,6 +141,7 @@ func (a *App) CreateRoutes() {
 	//For web
 	protected.POST("/uploadSound", endPointHandler.UploadSound)
 	protected.GET("/gameStatus", endPointHandler.GetGameStatus)
+	protected.POST("/createGame", endPointHandler.CreateGame)
 	protected.POST("/startGame", endPointHandler.StartGame)
 	protected.POST("/stopGame", endPointHandler.StopGame)
 	protected.DELETE("/user", endPointHandler.DeleteUser)

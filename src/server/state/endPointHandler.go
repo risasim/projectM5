@@ -54,26 +54,34 @@ type StartGameRequest struct {
 	GameType communication.GameType `json:"game_type"`
 }
 
-func (e EndPointHandler) StartGame(c *gin.Context) {
+func (e EndPointHandler) CreateGame(c *gin.Context) {
 	var req StartGameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": "Invalid request", "details": err.Error()})
 		return
 	}
-	if e.GameManager.GameStatus == Active {
+	if e.GameManager.GameStatus == Created {
 		c.JSON(400, gin.H{"error": "A game is already active"})
 		return
 	}
-	err := e.GameManager.StartNewGame(req.GameType)
+	err := e.GameManager.CreateNewGame(req.GameType)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to start game", "details": err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"status": "success", "message": "New game started"})
+	c.JSON(200, gin.H{"status": "success", "message": "New game created"})
+}
+
+func (e EndPointHandler) StartGame(c *gin.Context) {
+	err := e.GameManager.StartGame()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to start game", "details": err.Error()})
+	}
+	c.JSON(200, gin.H{"status": "success", "message": "Game started"})
 }
 
 func (e EndPointHandler) StopGame(c *gin.Context) {
-	if e.GameManager.GameStatus == idle {
+	if e.GameManager.GameStatus == Idle {
 		c.JSON(400, gin.H{"error": "No game is active"})
 		return
 	}
