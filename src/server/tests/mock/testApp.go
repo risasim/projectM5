@@ -6,6 +6,7 @@ import (
 	"github.com/risasim/projectM5/project/src/server/auth"
 	"github.com/risasim/projectM5/project/src/server/db"
 	"github.com/risasim/projectM5/project/src/server/db/model"
+	"github.com/risasim/projectM5/project/src/server/state"
 	"testing"
 )
 
@@ -62,6 +63,13 @@ func SetupTestApp(t *testing.T) *TestApp {
 	app := &app.App{}
 	app.UserRepo = mockRepo
 	app.SetupLogin()
+
+	gameManager := state.NewGameManager()
+	// run the broacasters in its own go routines
+	go gameManager.BroadcastLeaderBoardHandler()
+	go gameManager.BroadcastPisHandler()
+
+	app.GameManager = gameManager
 	app.CreateRoutes()
 
 	token, _ := auth.GenerateTestJWT("testuser3", false, []byte("jwt_secret"), 60)

@@ -80,13 +80,15 @@ func TestCreateGame_Statuses(t *testing.T) {
 }
 
 func TestCreateGame_InvalidJSON(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
+	ta := mock.SetupTestApp(t)
 	//Colon Missing
 	body := []byte(`"game_type" "Freefall"`)
-	req := httptest.NewRequest(http.MethodPost, "/createGame", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/createGame", bytes.NewReader(body))
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
-	testApp.App.Routes.ServeHTTP(w, req)
+	ta.App.Routes.ServeHTTP(w, req)
+
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -95,7 +97,6 @@ func TestCreateGame_InvalidJSON(t *testing.T) {
 	assert.NotEmpty(t, response["details"])
 }
 
-// TODO Complete after fixing start game
 func TestStartGame(t *testing.T) {
 	tests := []struct {
 		status state.GameStatus
@@ -108,6 +109,9 @@ func TestStartGame(t *testing.T) {
 	ta := mock.SetupTestApp(t)
 
 	for _, test := range tests {
+		// Set the game status before making the request
+		ta.App.GameManager.GameStatus = test.status
+
 		req := httptest.NewRequest(http.MethodPost, "/api/startGame", nil)
 		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()

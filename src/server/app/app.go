@@ -130,7 +130,7 @@ func (a *App) CreateRoutes() {
 	routes := gin.Default()
 	routes.POST("/auth", a.loginHandler.Login)
 	userController := db.NewUserController(a.DB)
-	endPointHandler := state.NewEndPointHandler(a.UserRepo)
+	endPointHandler := state.NewEndPointHandler(a.UserRepo, a.GameManager)
 	routes.POST("/piAuth", a.loginHandler.PiLogin)
 
 	protected := routes.Group("/api")
