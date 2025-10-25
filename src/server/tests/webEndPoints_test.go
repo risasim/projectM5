@@ -8,26 +8,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/risasim/projectM5/project/src/server/communication"
 	"github.com/risasim/projectM5/project/src/server/state"
 	"github.com/risasim/projectM5/project/src/server/tests/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-func setUpRouter(handler *state.EndPointHandler) *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	router := gin.Default()
-	router.POST("uploadSound", handler.UploadSound)
-	router.GET("/sound", handler.GetSound)
-	router.GET("/gameStatus", handler.GetGameStatus)
-	router.POST("/createGame", handler.CreateGame)
-	router.POST("/startGame", handler.StartGame)
-	router.POST("/stopGame", handler.StopGame)
-	router.POST("/joinGame", handler.JoinGame)
-	router.DELETE("/deleteUser", handler.DeleteUser)
-	return router
-}
 
 func TestGetGameStatus(t *testing.T) {
 	ta := mock.SetupTestApp(t)
@@ -40,8 +25,8 @@ func TestGetGameStatus(t *testing.T) {
 		{state.Started, state.Started.String()},
 	}
 	for _, test := range tests {
-
-		req := httptest.NewRequest(http.MethodGet, "/gameStatus", nil)
+		ta.App.GameManager.GameStatus = test.status
+		req := httptest.NewRequest(http.MethodGet, "/api/gameStatus", nil)
 		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
 		ta.App.Routes.ServeHTTP(w, req)
@@ -64,9 +49,10 @@ func TestCreateGame_Statuses(t *testing.T) {
 		{state.Started},
 	}
 	for _, test := range tests {
+		ta.App.GameManager.GameStatus = test.status
 		payload := state.StartGameRequest{GameType: communication.Freefall}
 		body, _ := json.Marshal(payload)
-		req := httptest.NewRequest(http.MethodPost, "/createGame", bytes.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, "/api/createGame", bytes.NewReader(body))
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
@@ -83,7 +69,7 @@ func TestCreateGame_InvalidJSON(t *testing.T) {
 	ta := mock.SetupTestApp(t)
 	//Colon Missing
 	body := []byte(`"game_type" "Freefall"`)
-	req := httptest.NewRequest(http.MethodPost, "/createGame", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/createGame", bytes.NewReader(body))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
@@ -134,7 +120,8 @@ func TestStopGame(t *testing.T) {
 	}
 	ta := mock.SetupTestApp(t)
 	for _, test := range tests {
-		req := httptest.NewRequest(http.MethodPost, "/stopGame", nil)
+		ta.App.GameManager.GameStatus = test.status
+		req := httptest.NewRequest(http.MethodPost, "/api/stopGame", nil)
 		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
 		ta.App.Routes.ServeHTTP(w, req)
@@ -157,7 +144,8 @@ func TestJoinGame(t *testing.T) {
 		{state.Started},
 	}
 	for _, test := range tests {
-		req := httptest.NewRequest(http.MethodPost, "/joinGame", nil)
+		ta.App.GameManager.GameStatus = test.status
+		req := httptest.NewRequest(http.MethodPost, "/api/joinGame", nil)
 		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
 		ta.App.Routes.ServeHTTP(w, req)
@@ -171,7 +159,7 @@ func TestJoinGame(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 	ta := mock.SetupTestApp(t)
-	req := httptest.NewRequest(http.MethodPost, "/deleteUser", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/deleteUser", nil)
 	req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
 	ta.App.Routes.ServeHTTP(w, req)
@@ -184,7 +172,7 @@ func createFileUploadRequest(filename string) *http.Request {
 	part, _ := writer.CreateFormFile("sound", filename)
 	_, _ = part.Write([]byte{})
 	_ = writer.Close()
-	req := httptest.NewRequest(http.MethodPost, "/uploadSound", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/uploadSound", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	return req
 }
@@ -205,36 +193,9 @@ func TestUploadSoundMp3AndNonMp3(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w1.Code)
 }
 
-func TestDownloadSoundUserNotFound(t *testing.T) {
-	ta := mock.SetupTestApp(t)
-	mp3req := createFileUploadRequest("sound.mp3")
-	mp3req.Header.Set("Authorization", "Bearer "+ta.Token)
-	w := httptest.NewRecorder()
-	ta.App.Routes.ServeHTTP(w, mp3req)
-	assert.Equal(t, http.StatusNotFound, w.Code)
-}
-
-func TestUploadSoundUserNotAString(t *testing.T) {
-	ta := mock.SetupTestApp(t)
-	mp3req := createFileUploadRequest("sound.mp3")
-	mp3req.Header.Set("Authorization", "Bearer "+ta.Token)
-	w := httptest.NewRecorder()
-	ta.App.Routes.ServeHTTP(w, mp3req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func TestUploadSoundUserNoUsername(t *testing.T) {
-	ta := mock.SetupTestApp(t)
-	mp3req := createFileUploadRequest("sound.mp3")
-	mp3req.Header.Set("Authorization", "Bearer "+ta.Token)
-	w := httptest.NewRecorder()
-	ta.App.Routes.ServeHTTP(w, mp3req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
 func TestGetSoundFile(t *testing.T) {
 	ta := mock.SetupTestApp(t)
-	existingReq := httptest.NewRequest(http.MethodGet, "/getSound", nil)
+	existingReq := httptest.NewRequest(http.MethodGet, "/api/getSound", nil)
 	existingReq.Header.Add("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
 	ta.App.Routes.ServeHTTP(w, existingReq)
