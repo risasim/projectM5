@@ -18,8 +18,8 @@ type EndPointHandler struct {
 	GameManager *GameManager
 }
 
-func NewEndPointHandler(repo db.UserRepositoryInterface) *EndPointHandler {
-	return &EndPointHandler{Repo: repo}
+func NewEndPointHandler(repo db.UserRepositoryInterface, gameManager *GameManager) *EndPointHandler {
+	return &EndPointHandler{Repo: repo, GameManager: gameManager}
 }
 
 func (e EndPointHandler) UploadSound(c *gin.Context) {

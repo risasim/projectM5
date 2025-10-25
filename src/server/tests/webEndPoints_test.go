@@ -107,6 +107,9 @@ func TestStartGame(t *testing.T) {
 	}
 	ta := mock.SetupTestApp(t)
 	for _, test := range tests {
+		// Set the game status before making the request
+		ta.App.GameManager.GameStatus = test.status
+
 		req := httptest.NewRequest(http.MethodPost, "/api/startGame", nil)
 		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
