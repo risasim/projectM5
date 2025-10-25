@@ -82,7 +82,6 @@ func TestCreateGame_InvalidJSON(t *testing.T) {
 	assert.NotEmpty(t, response["details"])
 }
 
-// TODO Complete after fixing start game
 func TestStartGame(t *testing.T) {
 	tests := []struct {
 		status state.GameStatus
@@ -108,7 +107,6 @@ func TestStartGame(t *testing.T) {
 	}
 }
 
-// TODO Complete after FIXING end game
 func TestStopGame(t *testing.T) {
 
 	tests := []struct {
@@ -133,7 +131,6 @@ func TestStopGame(t *testing.T) {
 	}
 }
 
-// TODO fix no session to join so get error
 func TestJoinGame(t *testing.T) {
 	ta := mock.SetupTestApp(t)
 	tests := []struct {

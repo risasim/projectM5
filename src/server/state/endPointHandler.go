@@ -146,7 +146,6 @@ func (e EndPointHandler) CreateGame(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "success", "message": "New game created"})
 }
 
-// TODO FIX
 func (e EndPointHandler) StartGame(c *gin.Context) {
 	if e.GameManager.GameStatus == Idle {
 		c.JSON(400, gin.H{"error": "There is no game to start"})
@@ -164,7 +163,6 @@ func (e EndPointHandler) StartGame(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "success", "message": "Game started"})
 }
 
-// TODO FIX
 func (e EndPointHandler) StopGame(c *gin.Context) {
 	if e.GameManager.GameStatus == Idle {
 		c.JSON(400, gin.H{"error": "No game has been created"})
