@@ -63,6 +63,7 @@ func (e EndPointHandler) UploadSound(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "success", "message": "Successfully updated death sound"})
 }
 
+// GetSound does retrieve the sound based on the data from db and then tries path depending if it is test or deployment
 func (e EndPointHandler) GetSound(c *gin.Context) {
 	username, exists := c.Get("username")
 	if !exists {
@@ -75,16 +76,38 @@ func (e EndPointHandler) GetSound(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "username in context is not a string"})
 		return
 	}
+
 	user, err := e.repo.GetUser(usernameStr)
-	if err != nil {
+	if err != nil || user == nil {
 		c.JSON(404, gin.H{"error": "User or sound not found"})
 		return
 	}
 
 	saveDir := "soundEffects"
 	filePath := filepath.Join(saveDir, user.DeathSound)
-	c.File(filePath)
 
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		alternativePaths := []string{
+			filepath.Join("..", "soundEffects", user.DeathSound),
+			filepath.Join("..", "..", "soundEffects", user.DeathSound),
+		}
+
+		found := false
+		for _, altPath := range alternativePaths {
+			if _, err := os.Stat(altPath); err == nil {
+				filePath = altPath
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			c.JSON(404, gin.H{"error": "Sound file not found"})
+			return
+		}
+	}
+
+	c.File(filePath)
 }
 
 func (e EndPointHandler) GetGameStatus(c *gin.Context) {
