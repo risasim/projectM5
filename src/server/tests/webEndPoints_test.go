@@ -159,7 +159,7 @@ func TestJoinGame(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 	ta := mock.SetupTestApp(t)
-	req := httptest.NewRequest(http.MethodPost, "/api/deleteUser", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/user", nil)
 	req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
 	ta.App.Routes.ServeHTTP(w, req)
@@ -195,7 +195,7 @@ func TestUploadSoundMp3AndNonMp3(t *testing.T) {
 
 func TestGetSoundFile(t *testing.T) {
 	ta := mock.SetupTestApp(t)
-	existingReq := httptest.NewRequest(http.MethodGet, "/api/getSound", nil)
+	existingReq := httptest.NewRequest(http.MethodGet, "/api/sound", nil)
 	existingReq.Header.Add("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
 	ta.App.Routes.ServeHTTP(w, existingReq)
