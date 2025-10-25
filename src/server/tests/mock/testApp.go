@@ -1,13 +1,14 @@
 package mock
 
 import (
+	"testing"
+
 	"github.com/gin-gonic/gin"
 	"github.com/risasim/projectM5/project/src/server/app"
 	"github.com/risasim/projectM5/project/src/server/auth"
 	"github.com/risasim/projectM5/project/src/server/db"
 	"github.com/risasim/projectM5/project/src/server/db/model"
 	"github.com/risasim/projectM5/project/src/server/state"
-	"testing"
 )
 
 // TestApp should mock the app, with predifined parts
@@ -15,7 +16,8 @@ type TestApp struct {
 	App      *app.App
 	MockRepo db.UserRepositoryInterface
 	// Token is JWT token that is generated, for easier testing
-	Token string
+	Token            string
+	NonExistentToken string
 }
 
 func SetupTestApp(t *testing.T) *TestApp {
@@ -73,10 +75,11 @@ func SetupTestApp(t *testing.T) *TestApp {
 	app.CreateRoutes()
 
 	token, _ := auth.GenerateTestJWT("testuser3", false, []byte("jwt_secret"), 60)
-
+	NonExistentToken, _ := auth.GenerateTestJWT("NonExistentUser", false, []byte("jwt_secret"), 60)
 	return &TestApp{
-		App:      app,
-		MockRepo: mockRepo,
-		Token:    token,
+		App:              app,
+		MockRepo:         mockRepo,
+		Token:            token,
+		NonExistentToken: NonExistentToken,
 	}
 }

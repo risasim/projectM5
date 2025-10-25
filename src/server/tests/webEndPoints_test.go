@@ -198,3 +198,12 @@ func TestGetSoundFile(t *testing.T) {
 	ta.App.Routes.ServeHTTP(w, existingReq)
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+
+func TestUploadSoundUserNotFound(t *testing.T) {
+	ta := mock.SetupTestApp(t)
+	mp3req := createFileUploadRequest("sound.mp3")
+	mp3req.Header.Set("Authorization", "Bearer "+ta.NonExistentToken)
+	w := httptest.NewRecorder()
+	ta.App.Routes.ServeHTTP(w, mp3req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
