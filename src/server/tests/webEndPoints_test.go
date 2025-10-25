@@ -30,6 +30,7 @@ func setUpRouter(handler *state.EndPointHandler) *gin.Engine {
 }
 
 func TestGetGameStatus(t *testing.T) {
+	ta := mock.SetupTestApp(t)
 	tests := []struct {
 		status     state.GameStatus
 		wantStatus string
@@ -40,11 +41,10 @@ func TestGetGameStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 
-		handler := state.EndPointHandler{Repo: nil, GameManager: &state.GameManager{GameStatus: test.status}}
-		router := setUpRouter(&handler)
 		req := httptest.NewRequest(http.MethodGet, "/gameStatus", nil)
+		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		ta.App.Routes.ServeHTTP(w, req)
 
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -55,6 +55,7 @@ func TestGetGameStatus(t *testing.T) {
 }
 
 func TestCreateGame_Statuses(t *testing.T) {
+	ta := mock.SetupTestApp(t)
 	tests := []struct {
 		status state.GameStatus
 	}{
@@ -63,14 +64,13 @@ func TestCreateGame_Statuses(t *testing.T) {
 		{state.Started},
 	}
 	for _, test := range tests {
-		handler := state.EndPointHandler{Repo: nil, GameManager: &state.GameManager{GameStatus: test.status}}
-		router := setUpRouter(&handler)
 		payload := state.StartGameRequest{GameType: communication.Freefall}
 		body, _ := json.Marshal(payload)
 		req := httptest.NewRequest(http.MethodPost, "/createGame", bytes.NewReader(body))
 		req.Header.Add("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		ta.App.Routes.ServeHTTP(w, req)
 		if test.status != state.Idle {
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 		} else {
@@ -80,13 +80,14 @@ func TestCreateGame_Statuses(t *testing.T) {
 }
 
 func TestCreateGame_InvalidJSON(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
+	ta := mock.SetupTestApp(t)
 	//Colon Missing
 	body := []byte(`"game_type" "Freefall"`)
 	req := httptest.NewRequest(http.MethodPost, "/createGame", bytes.NewReader(body))
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
-	testApp.App.Routes.ServeHTTP(w, req)
+	ta.App.Routes.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -104,9 +105,7 @@ func TestStartGame(t *testing.T) {
 		{state.Created},
 		{state.Started},
 	}
-
 	ta := mock.SetupTestApp(t)
-
 	for _, test := range tests {
 		req := httptest.NewRequest(http.MethodPost, "/api/startGame", nil)
 		req.Header.Set("Authorization", "Bearer "+ta.Token)
@@ -122,6 +121,7 @@ func TestStartGame(t *testing.T) {
 
 // TODO Complete after FIXING end game
 func TestStopGame(t *testing.T) {
+
 	tests := []struct {
 		status state.GameStatus
 	}{
@@ -129,12 +129,12 @@ func TestStopGame(t *testing.T) {
 		{state.Created},
 		{state.Started},
 	}
+	ta := mock.SetupTestApp(t)
 	for _, test := range tests {
-		handler := state.EndPointHandler{Repo: nil, GameManager: &state.GameManager{GameStatus: test.status}}
-		router := setUpRouter(&handler)
 		req := httptest.NewRequest(http.MethodPost, "/stopGame", nil)
+		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		ta.App.Routes.ServeHTTP(w, req)
 		if test.status != state.Started {
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 		} else {
@@ -145,7 +145,7 @@ func TestStopGame(t *testing.T) {
 
 // TODO fix no session to join so get error
 func TestJoinGame(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
+	ta := mock.SetupTestApp(t)
 	tests := []struct {
 		status state.GameStatus
 	}{
@@ -154,15 +154,10 @@ func TestJoinGame(t *testing.T) {
 		{state.Started},
 	}
 	for _, test := range tests {
-		handler := state.EndPointHandler{Repo: testApp.MockRepo, GameManager: &state.GameManager{GameStatus: test.status}}
-		router := gin.Default()
-		router.POST("/joinGame", func(c *gin.Context) {
-			c.Set("username", "testuser")
-			handler.JoinGame(c)
-		})
 		req := httptest.NewRequest(http.MethodPost, "/joinGame", nil)
+		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		ta.App.Routes.ServeHTTP(w, req)
 		if test.status != state.Created {
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 		} else {
@@ -172,16 +167,11 @@ func TestJoinGame(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
-	handler := state.EndPointHandler{Repo: testApp.MockRepo, GameManager: &state.GameManager{GameStatus: state.Idle}}
-	router := gin.Default()
-	router.POST("/deleteUser", func(c *gin.Context) {
-		c.Set("username", "testuser")
-		handler.DeleteUser(c)
-	})
+	ta := mock.SetupTestApp(t)
 	req := httptest.NewRequest(http.MethodPost, "/deleteUser", nil)
+	req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	ta.App.Routes.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
@@ -197,77 +187,53 @@ func createFileUploadRequest(filename string) *http.Request {
 }
 
 func TestUploadSoundMp3AndNonMp3(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
-	handler := state.EndPointHandler{Repo: testApp.MockRepo, GameManager: &state.GameManager{GameStatus: state.Idle}}
-	router := gin.Default()
-	router.POST("/uploadSound", func(c *gin.Context) {
-		c.Set("username", "testuser")
-		handler.UploadSound(c)
-	})
+	ta := mock.SetupTestApp(t)
 
 	mp3req := createFileUploadRequest("sound.mp3")
+	mp3req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, mp3req)
+	ta.App.Routes.ServeHTTP(w, mp3req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	nonMp3req := createFileUploadRequest("sound.txt")
+	nonMp3req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w1 := httptest.NewRecorder()
-	router.ServeHTTP(w1, nonMp3req)
+	ta.App.Routes.ServeHTTP(w1, nonMp3req)
 	assert.Equal(t, http.StatusBadRequest, w1.Code)
 }
 
 func TestDownloadSoundUserNotFound(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
-	handler := state.EndPointHandler{Repo: testApp.MockRepo, GameManager: &state.GameManager{GameStatus: state.Idle}}
-	router := gin.Default()
-	router.POST("/uploadSound", func(c *gin.Context) {
-		c.Set("username", "NonExistentUser")
-		handler.UploadSound(c)
-	})
-
+	ta := mock.SetupTestApp(t)
 	mp3req := createFileUploadRequest("sound.mp3")
+	mp3req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, mp3req)
+	ta.App.Routes.ServeHTTP(w, mp3req)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestUploadSoundUserNotAString(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
-	handler := state.EndPointHandler{Repo: testApp.MockRepo, GameManager: &state.GameManager{GameStatus: state.Idle}}
-	router := gin.Default()
-	router.POST("/uploadSound", func(c *gin.Context) {
-		c.Set("username", 123)
-		handler.UploadSound(c)
-	})
+	ta := mock.SetupTestApp(t)
 	mp3req := createFileUploadRequest("sound.mp3")
+	mp3req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, mp3req)
+	ta.App.Routes.ServeHTTP(w, mp3req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUploadSoundUserNoUsername(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
-	handler := state.EndPointHandler{Repo: testApp.MockRepo, GameManager: &state.GameManager{GameStatus: state.Idle}}
-	router := gin.Default()
-	router.POST("/uploadSound", func(c *gin.Context) {
-		handler.UploadSound(c)
-	})
+	ta := mock.SetupTestApp(t)
 	mp3req := createFileUploadRequest("sound.mp3")
+	mp3req.Header.Set("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, mp3req)
+	ta.App.Routes.ServeHTTP(w, mp3req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestGetSoundFile(t *testing.T) {
-	testApp := mock.SetupTestApp(t)
-	handler := state.EndPointHandler{Repo: testApp.MockRepo, GameManager: &state.GameManager{GameStatus: state.Idle}}
-	router := gin.Default()
-	router.GET("/getSound", func(c *gin.Context) {
-		c.Set("username", "testuser")
-		handler.GetSound(c)
-	})
+	ta := mock.SetupTestApp(t)
 	existingReq := httptest.NewRequest(http.MethodGet, "/getSound", nil)
+	existingReq.Header.Add("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, existingReq)
+	ta.App.Routes.ServeHTTP(w, existingReq)
 	assert.Equal(t, http.StatusOK, w.Code)
 }
