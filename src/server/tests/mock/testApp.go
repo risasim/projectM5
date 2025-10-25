@@ -32,7 +32,7 @@ func SetupTestApp(t *testing.T) *TestApp {
 		model.PostUser{
 			Username:   "testuser",
 			Password:   hashedPassword,
-			DeathSound: "sound.wav",
+			DeathSound: "default.mp3",
 			PiSN:       "pi-0001",
 		}, "", true)
 
@@ -45,7 +45,7 @@ func SetupTestApp(t *testing.T) *TestApp {
 		model.PostUser{
 			Username:   "testuser2",
 			Password:   hashedPassword,
-			DeathSound: "sound.wav",
+			DeathSound: "default.mp3",
 			PiSN:       "pi-0002",
 		}, hashedApiKey, false)
 
@@ -54,7 +54,7 @@ func SetupTestApp(t *testing.T) *TestApp {
 		model.PostUser{
 			Username:   "testuser3",
 			Password:   hashedPassword,
-			DeathSound: "sound.wav",
+			DeathSound: "default.mp3",
 			PiSN:       "pi-0003",
 		}, hashedApiKey2, false)
 
@@ -64,7 +64,7 @@ func SetupTestApp(t *testing.T) *TestApp {
 	app.SetupLogin()
 	app.CreateRoutes()
 
-	token, _ := auth.GenerateTestJWT("testuser", false, []byte("jwt_secret"), 60)
+	token, _ := auth.GenerateTestJWT("testuser3", false, []byte("jwt_secret"), 60)
 
 	return &TestApp{
 		App:      app,

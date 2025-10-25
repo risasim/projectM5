@@ -159,6 +159,8 @@ func (gm *GameManager) WsPisHandler(c *gin.Context) {
 	gm.WsPis[conn] = true
 	gm.Mutex.Unlock()
 
+	go gm.handlePiConnection(conn)
+
 }
 
 // handlePiConnection does listen to being hit and in case that

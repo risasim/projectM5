@@ -15,6 +15,17 @@ type MockUserRepository struct {
 	autoid    uint
 }
 
+func (m *MockUserRepository) UpdateDeathSound(username string, path string) error {
+	user := m.users[username]
+	user.DeathSound = path
+	return nil
+}
+
+func (m *MockUserRepository) DeleteUser(username string) error {
+	delete(m.users, username)
+	return nil
+}
+
 func (m *MockUserRepository) GetPiUser(piSN string) (*model.GetUserAuth, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

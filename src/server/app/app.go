@@ -130,7 +130,7 @@ func (a *App) CreateRoutes() {
 	routes := gin.Default()
 	routes.POST("/auth", a.loginHandler.Login)
 	userController := db.NewUserController(a.DB)
-	endPointHandler := state.NewEndPointHandler(a.DB)
+	endPointHandler := state.NewEndPointHandler(a.UserRepo)
 	routes.POST("/piAuth", a.loginHandler.PiLogin)
 
 	protected := routes.Group("/api")
@@ -140,6 +140,7 @@ func (a *App) CreateRoutes() {
 	protected.POST("/addUser", userController.InsertUser)
 	//For web
 	protected.POST("/uploadSound", endPointHandler.UploadSound)
+	protected.GET("/sound", endPointHandler.GetSound)
 	protected.GET("/gameStatus", endPointHandler.GetGameStatus)
 	protected.POST("/createGame", endPointHandler.CreateGame)
 	protected.POST("/startGame", endPointHandler.StartGame)
@@ -147,7 +148,6 @@ func (a *App) CreateRoutes() {
 	protected.DELETE("/user", endPointHandler.DeleteUser)
 	protected.POST("/joinGame", endPointHandler.JoinGame)
 	// For pi
-	//protected.GET("/music") connected this to the POST from website
 
 	protected.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
 	protected.GET("/wsPis", a.GameManager.WsPisHandler)

@@ -1,11 +1,11 @@
 package state
 
 import (
-	"database/sql"
-
 	"github.com/gin-gonic/gin"
 	"github.com/risasim/projectM5/project/src/server/communication"
 	"github.com/risasim/projectM5/project/src/server/db"
+	"os"
+	"path/filepath"
 )
 
 type EndPointHandlerInterface interface {
@@ -13,18 +13,28 @@ type EndPointHandlerInterface interface {
 }
 
 type EndPointHandler struct {
-	db          *sql.DB
+	repo        db.UserRepositoryInterface
 	GameManager *GameManager
 }
 
-func NewEndPointHandler(db *sql.DB) *EndPointHandler {
-	return &EndPointHandler{db: db}
+func NewEndPointHandler(repo db.UserRepositoryInterface) *EndPointHandler {
+	return &EndPointHandler{repo: repo}
 }
 
 func (e EndPointHandler) UploadSound(c *gin.Context) {
-	username := c.Query("username")
-	repo := db.NewUsersRepository(e.db)
-	user, err := repo.GetUser(username)
+	username, exists := c.Get("username")
+	if !exists {
+		c.JSON(400, gin.H{"error": "no username in context"})
+		return
+	}
+
+	usernameStr, ok := username.(string)
+	if !ok {
+		c.JSON(400, gin.H{"error": "username in context is not a string"})
+		return
+	}
+
+	user, err := e.repo.GetUser(usernameStr)
 	if err != nil || user == nil {
 		c.JSON(404, gin.H{"error": "User not found in database"})
 		return
@@ -34,16 +44,47 @@ func (e EndPointHandler) UploadSound(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Failed to get file", "details": err.Error()})
 		return
 	}
-	_, err = e.db.Exec("UPDATE users SET deathSound=$1 WHERE username=$2", file.Filename, username)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "Failed to save filename to database", "details": err.Error()})
-	}
-	err = c.SaveUploadedFile(file, "/src/server/soundEffects"+file.Filename)
+
+	saveDir := "soundEffects"
+	os.MkdirAll(saveDir, os.ModePerm)
+
+	savePath := filepath.Join(saveDir, file.Filename)
+	err = c.SaveUploadedFile(file, savePath)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to save file", "details": err.Error()})
 		return
 	}
+
+	err = e.repo.UpdateDeathSound(usernameStr, file.Filename)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to save filename to database", "details": err.Error()})
+	}
+
 	c.JSON(200, gin.H{"status": "success", "message": "Successfully updated death sound"})
+}
+
+func (e EndPointHandler) GetSound(c *gin.Context) {
+	username, exists := c.Get("username")
+	if !exists {
+		c.JSON(400, gin.H{"error": "no username in context"})
+		return
+	}
+
+	usernameStr, ok := username.(string)
+	if !ok {
+		c.JSON(400, gin.H{"error": "username in context is not a string"})
+		return
+	}
+	user, err := e.repo.GetUser(usernameStr)
+	if err != nil {
+		c.JSON(404, gin.H{"error": "User or sound not found"})
+		return
+	}
+
+	saveDir := "soundEffects"
+	filePath := filepath.Join(saveDir, user.DeathSound)
+	c.File(filePath)
+
 }
 
 func (e EndPointHandler) GetGameStatus(c *gin.Context) {
@@ -94,8 +135,18 @@ func (e EndPointHandler) StopGame(c *gin.Context) {
 }
 
 func (e EndPointHandler) DeleteUser(c *gin.Context) {
-	username := c.Query("username")
-	_, err := e.db.Exec("DELETE FROM users WHERE username=$1", username)
+	username, exists := c.Get("username")
+	if !exists {
+		c.JSON(400, gin.H{"error": "no username in context"})
+		return
+	}
+
+	usernameStr, ok := username.(string)
+	if !ok {
+		c.JSON(400, gin.H{"error": "username in context is not a string"})
+		return
+	}
+	err := e.repo.DeleteUser(usernameStr)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to delete user from Database", "details": err.Error()})
 		return
@@ -104,14 +155,24 @@ func (e EndPointHandler) DeleteUser(c *gin.Context) {
 }
 
 func (e EndPointHandler) JoinGame(c *gin.Context) {
-	username := c.Query("username")
-	repo := db.NewUsersRepository(e.db)
-	user, err := repo.GetUser(username)
+	username, exists := c.Get("username")
+	if !exists {
+		c.JSON(400, gin.H{"error": "no username in context"})
+		return
+	}
+
+	usernameStr, ok := username.(string)
+	if !ok {
+		c.JSON(400, gin.H{"error": "username in context is not a string"})
+		return
+	}
+
+	user, err := e.repo.GetUser(usernameStr)
 	if err != nil {
 		c.JSON(404, gin.H{"error": "User not found in database", "details": err.Error()})
 	}
 	player := Player{
-		Username:   username,
+		Username:   usernameStr,
 		PiSN:       user.PiSN,
 		DeathSound: user.DeathSound,
 	}

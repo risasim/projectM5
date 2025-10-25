@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/risasim/projectM5/project/src/server/db/model"
 	"log"
 )
@@ -11,11 +12,45 @@ type UserRepositoryInterface interface {
 	InsertUser(user model.PostUser, apiKey string, isAdmin bool) bool
 	GetUser(username string) (*model.GetUserAuth, error)
 	GetPiUser(piSN string) (*model.GetUserAuth, error)
+	UpdateDeathSound(username string, path string) error
+	DeleteUser(username string) error
 }
 
 // UsersRepository does execute the sql calls on the db
 type UsersRepository struct {
 	db *sql.DB
+}
+
+func (u UsersRepository) UpdateDeathSound(username, path string) error {
+	result, err := u.db.Exec("UPDATE users SET deathSound=$1 WHERE username=$2", path, username)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("no user found with username %s", username)
+	}
+	return nil
+}
+
+func (u UsersRepository) DeleteUser(username string) error {
+	result, err := u.db.Exec("DELETE FROM users WHERE username=$1", username)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("no user found with username %s", username)
+	}
+	return nil
 }
 
 func (u UsersRepository) GetPiUser(piSN string) (*model.GetUserAuth, error) {
