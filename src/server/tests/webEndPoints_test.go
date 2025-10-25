@@ -22,7 +22,7 @@ func setUpRouter(handler *state.EndPointHandler) *gin.Engine {
 	router.GET("/sound", handler.GetSound)
 	router.GET("/gameStatus", handler.GetGameStatus)
 	router.POST("/createGame", handler.CreateGame)
-	router.POST("startGame", handler.StartGame)
+	router.POST("/startGame", handler.StartGame)
 	router.POST("/stopGame", handler.StopGame)
 	router.POST("/joinGame", handler.JoinGame)
 	router.DELETE("/deleteUser", handler.DeleteUser)
@@ -80,14 +80,13 @@ func TestCreateGame_Statuses(t *testing.T) {
 }
 
 func TestCreateGame_InvalidJSON(t *testing.T) {
-	handler := state.EndPointHandler{Repo: nil, GameManager: &state.GameManager{GameStatus: state.Idle}}
-	router := setUpRouter(&handler)
+	testApp := mock.SetupTestApp(t)
 	//Colon Missing
 	body := []byte(`"game_type" "Freefall"`)
 	req := httptest.NewRequest(http.MethodPost, "/createGame", bytes.NewReader(body))
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	testApp.App.Routes.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -105,12 +104,14 @@ func TestStartGame(t *testing.T) {
 		{state.Created},
 		{state.Started},
 	}
+
+	ta := mock.SetupTestApp(t)
+
 	for _, test := range tests {
-		handler := state.EndPointHandler{Repo: nil, GameManager: &state.GameManager{GameStatus: test.status}}
-		router := setUpRouter(&handler)
-		req := httptest.NewRequest(http.MethodPost, "/startGame", nil)
+		req := httptest.NewRequest(http.MethodPost, "/api/startGame", nil)
+		req.Header.Set("Authorization", "Bearer "+ta.Token)
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		ta.App.Routes.ServeHTTP(w, req)
 		if test.status != state.Created {
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 		} else {
