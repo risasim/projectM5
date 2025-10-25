@@ -1,11 +1,12 @@
 package state
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/gin-gonic/gin"
 	"github.com/risasim/projectM5/project/src/server/communication"
 	"github.com/risasim/projectM5/project/src/server/db"
-	"os"
-	"path/filepath"
 )
 
 type EndPointHandlerInterface interface {
@@ -13,12 +14,12 @@ type EndPointHandlerInterface interface {
 }
 
 type EndPointHandler struct {
-	repo        db.UserRepositoryInterface
+	Repo        db.UserRepositoryInterface
 	GameManager *GameManager
 }
 
 func NewEndPointHandler(repo db.UserRepositoryInterface) *EndPointHandler {
-	return &EndPointHandler{repo: repo}
+	return &EndPointHandler{Repo: repo}
 }
 
 func (e EndPointHandler) UploadSound(c *gin.Context) {
@@ -34,7 +35,7 @@ func (e EndPointHandler) UploadSound(c *gin.Context) {
 		return
 	}
 
-	user, err := e.repo.GetUser(usernameStr)
+	user, err := e.Repo.GetUser(usernameStr)
 	if err != nil || user == nil {
 		c.JSON(404, gin.H{"error": "User not found in database"})
 		return
@@ -42,6 +43,11 @@ func (e EndPointHandler) UploadSound(c *gin.Context) {
 	file, err := c.FormFile("sound")
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Failed to get file", "details": err.Error()})
+		return
+	}
+
+	if filepath.Ext(file.Filename) != ".mp3" {
+		c.JSON(400, gin.H{"error": "only mp3 files are allowed"})
 		return
 	}
 
@@ -55,7 +61,7 @@ func (e EndPointHandler) UploadSound(c *gin.Context) {
 		return
 	}
 
-	err = e.repo.UpdateDeathSound(usernameStr, file.Filename)
+	err = e.Repo.UpdateDeathSound(usernameStr, file.Filename)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to save filename to database", "details": err.Error()})
 	}
@@ -77,7 +83,7 @@ func (e EndPointHandler) GetSound(c *gin.Context) {
 		return
 	}
 
-	user, err := e.repo.GetUser(usernameStr)
+	user, err := e.Repo.GetUser(usernameStr)
 	if err != nil || user == nil {
 		c.JSON(404, gin.H{"error": "User or sound not found"})
 		return
@@ -125,7 +131,11 @@ func (e EndPointHandler) CreateGame(c *gin.Context) {
 		return
 	}
 	if e.GameManager.GameStatus == Created {
-		c.JSON(400, gin.H{"error": "A game is already active"})
+		c.JSON(400, gin.H{"error": "A game is already created"})
+		return
+	}
+	if e.GameManager.GameStatus == Started {
+		c.JSON(400, gin.H{"error": "A game is already running"})
 		return
 	}
 	err := e.GameManager.CreateNewGame(req.GameType)
@@ -136,17 +146,32 @@ func (e EndPointHandler) CreateGame(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "success", "message": "New game created"})
 }
 
+// TODO FIX
 func (e EndPointHandler) StartGame(c *gin.Context) {
+	if e.GameManager.GameStatus == Idle {
+		c.JSON(400, gin.H{"error": "There is no game to start"})
+		return
+	}
+	if e.GameManager.GameStatus == Started {
+		c.JSON(400, gin.H{"error": "A game is already running"})
+		return
+	}
 	err := e.GameManager.StartGame()
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to start game", "details": err.Error()})
+		return
 	}
 	c.JSON(200, gin.H{"status": "success", "message": "Game started"})
 }
 
+// TODO FIX
 func (e EndPointHandler) StopGame(c *gin.Context) {
 	if e.GameManager.GameStatus == Idle {
-		c.JSON(400, gin.H{"error": "No game is active"})
+		c.JSON(400, gin.H{"error": "No game has been created"})
+		return
+	}
+	if e.GameManager.GameStatus == Created {
+		c.JSON(400, gin.H{"error": "No game is running"})
 		return
 	}
 	err := e.GameManager.EndGame()
@@ -169,7 +194,7 @@ func (e EndPointHandler) DeleteUser(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "username in context is not a string"})
 		return
 	}
-	err := e.repo.DeleteUser(usernameStr)
+	err := e.Repo.DeleteUser(usernameStr)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to delete user from Database", "details": err.Error()})
 		return
@@ -190,7 +215,7 @@ func (e EndPointHandler) JoinGame(c *gin.Context) {
 		return
 	}
 
-	user, err := e.repo.GetUser(usernameStr)
+	user, err := e.Repo.GetUser(usernameStr)
 	if err != nil {
 		c.JSON(404, gin.H{"error": "User not found in database", "details": err.Error()})
 	}
@@ -198,6 +223,14 @@ func (e EndPointHandler) JoinGame(c *gin.Context) {
 		Username:   usernameStr,
 		PiSN:       user.PiSN,
 		DeathSound: user.DeathSound,
+	}
+	if e.GameManager.GameStatus == Idle {
+		c.JSON(400, gin.H{"error": "No game to join"})
+		return
+	}
+	if e.GameManager.GameStatus == Started {
+		c.JSON(400, gin.H{"error": "A game is already running"})
+		return
 	}
 	err = e.GameManager.AddPlayer(player)
 	if err != nil {

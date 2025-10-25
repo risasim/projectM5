@@ -66,7 +66,7 @@ var (
 )
 
 func ParseGameType(gmt string) (GameType, error) {
-	gmt = strings.TrimSpace(strings.ToLower(gmt))
+	gmt = strings.TrimSpace(gmt)
 	value, ok := GameType_value[gmt]
 	if !ok {
 		return GameType(0), fmt.Errorf("invalid msg type: %s", gmt)

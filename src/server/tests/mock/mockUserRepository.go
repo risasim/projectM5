@@ -2,9 +2,10 @@ package mock
 
 import (
 	"database/sql"
+	"sync"
+
 	"github.com/risasim/projectM5/project/src/server/db"
 	"github.com/risasim/projectM5/project/src/server/db/model"
-	"sync"
 )
 
 // MockUserRepository is a mock of user repository used for testing
