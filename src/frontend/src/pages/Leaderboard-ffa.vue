@@ -15,9 +15,9 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(player, index) in players" :key="player.name">
+          <tr v-for="(player, index) in players" :key="player.username">
             <td>{{ index + 1 }}</td>
-            <td>{{ player.name }}</td>
+            <td>{{ player.username }}</td>
             <td>{{ player.deaths }}</td>
             <td>{{ player.score }}</td>
           </tr>
@@ -25,7 +25,7 @@
       </table>
 
       <div>
-        <button class="back-btn" @click="goBack">Back</button>     
+        <button class="back-btn" @click="goBack">Back</button>
       </div>
     </div>
   </div>
@@ -36,24 +36,58 @@ export default {
   name: 'LeaderboardFFA',
   data() {
     return {
-      players: [
-        { name: 'Berk', deaths: 3, score: 27 },
-        { name: 'Orbay', deaths: 2, score: 25 },
-        { name: 'Richard', deaths: 9, score: 14 },
-        { name: 'Peter', deaths: 3, score: 9 },
-        { name: 'Muhammed', deaths: 7, score: 8 },
-        { name: 'Marciano', deaths: 2, score: 4 }
-      ]
-    }
+      players: [],
+      ws: null
+    };
   },
   methods: {
     goBack() {
       this.$router.go(-1);
-    }
-  }
-}
-</script>
+    },
+    connectLeaderboard() {
+      // connect web socket
+      const wsUrl = `ws://116.203.97.62:8080/api/wsLeaderboard`;
+      this.ws = new WebSocket(wsUrl);
 
+      this.ws.onopen = () => {
+        console.log('Connected to leaderboard WebSocket (FFA)');
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.game_type && message.game_type.toLowerCase() === 'freefall') {
+            if (message.players && Array.isArray(message.players)) {
+              this.players = message.players.map((p, i) => ({
+                username: p.username,
+                deaths: p.deaths || 0,
+                score: p.score || 0
+              }));
+            }
+          }
+        } catch (err) {
+          console.error('WebSocket parse error:', err);
+        }
+      };
+
+      this.ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+      };
+
+      this.ws.onclose = () => {
+        console.log('WebSocket closed. Reconnecting in 5 seconds...');
+        setTimeout(() => this.connectLeaderboard(), 5000);
+      };
+    }
+  },
+  mounted() {
+    this.connectLeaderboard();
+  },
+  beforeUnmount() {
+    if (this.ws) this.ws.close();
+  }
+};
+</script>
 
 <style scoped>
 .leaderboard-page {
@@ -194,6 +228,4 @@ export default {
     padding: 2.5vw 6vw;
   }
 }
-
 </style>
-

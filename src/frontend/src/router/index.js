@@ -65,20 +65,32 @@ const router = createRouter({
   routes
 })
 
-
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('authToken');
-  
-  // routes that require authentication
-  const protectedRoutes = ['/userboard', '/adminboard', '/adminedit'];
+  const token = localStorage.getItem('authToken')
+  const role = localStorage.getItem('userRole')
 
-  if (protectedRoutes.includes(to.path) && !token) {
-    // No token? Redirect to login
-    next('/login');
-  } else {
-    next(); // Proceed normally
+  // routes that require a user to be logged in
+  const protectedRoutes = ['/userboard']
+
+  // routes that require admin access
+  const adminRoutes = ['/adminboard', '/adminedit']
+
+  // not logged in
+  if (!token && protectedRoutes.includes(to.path)) {
+    return next('/login')
   }
-});
 
+  if (!token && adminRoutes.includes(to.path)) {
+    return next('/login')
+  }
 
-export default router;
+  // logged in as user
+  if (token && adminRoutes.includes(to.path) && role !== 'admin') {
+    alert('Access denied: Admins only.')
+    return next('/userboard')
+  }
+
+  next()
+})
+
+export default router
