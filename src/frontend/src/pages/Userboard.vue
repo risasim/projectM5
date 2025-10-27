@@ -101,6 +101,8 @@ export default {
         if (data.status === 'success') alert('Sound uploaded successfully!');
         else alert(data.error || 'Upload failed.');
 
+
+        alert('Audio uploaded.');
       } catch (err) {
         console.error('Audio validation failed:', err);
       }
