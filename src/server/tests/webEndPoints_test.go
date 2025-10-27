@@ -58,6 +58,7 @@ func TestCreateGame_Statuses(t *testing.T) {
 		w := httptest.NewRecorder()
 		ta.App.Routes.ServeHTTP(w, req)
 		if test.status != state.Idle {
+			println(w.Body.String())
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 		} else {
 			assert.Equal(t, http.StatusOK, w.Code)

@@ -74,7 +74,7 @@ func SetupTestApp(t *testing.T) *TestApp {
 	app.GameManager = gameManager
 	app.CreateRoutes()
 
-	token, _ := auth.GenerateTestJWT("testuser3", false, []byte("jwt_secret"), 60)
+	token, _ := auth.GenerateTestJWT("testuser", true, []byte("jwt_secret"), 60)
 	NonExistentToken, _ := auth.GenerateTestJWT("NonExistentUser", false, []byte("jwt_secret"), 60)
 	return &TestApp{
 		App:              app,

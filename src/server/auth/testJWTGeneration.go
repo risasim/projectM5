@@ -9,7 +9,7 @@ import (
 func GenerateTestJWT(username string, isAdmin bool, secret []byte, durationMinutes int) (string, error) {
 	claims := jwt.MapClaims{
 		"username": username,
-		"isAdmin":  isAdmin,
+		"admin":    isAdmin,
 		"exp":      time.Now().Add(time.Duration(durationMinutes) * time.Minute).Unix(),
 	}
 

@@ -136,16 +136,22 @@ func (a *App) CreateRoutes() {
 	protected := routes.Group("/api")
 	protected.Use(a.loginHandler.AuthenticationMiddleware)
 
+	adminProtected := routes.Group("/api")
+	adminProtected.Use(a.loginHandler.AuthenticationMiddleware)
+	adminProtected.Use(auth.CheckAdmin)
+
 	protected.GET("/users", userController.GetUsers)
-	protected.POST("/addUser", userController.InsertUser)
+	adminProtected.POST("/addUser", userController.InsertUser)
 	//For web
 	protected.POST("/uploadSound", endPointHandler.UploadSound)
 	protected.GET("/sound", endPointHandler.GetSound)
 	protected.GET("/gameStatus", endPointHandler.GetGameStatus)
-	protected.POST("/createGame", endPointHandler.CreateGame)
-	protected.POST("/startGame", endPointHandler.StartGame)
-	protected.POST("/stopGame", endPointHandler.StopGame)
-	protected.DELETE("/user", endPointHandler.DeleteUser)
+	//For admin - add the middleware for checking
+	adminProtected.POST("/createGame", endPointHandler.CreateGame)
+	adminProtected.POST("/startGame", endPointHandler.StartGame)
+	adminProtected.POST("/stopGame", endPointHandler.StopGame)
+	adminProtected.DELETE("/user", endPointHandler.DeleteUser)
+
 	protected.POST("/joinGame", endPointHandler.JoinGame)
 	// For pi
 

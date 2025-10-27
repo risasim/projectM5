@@ -36,6 +36,24 @@ func NewLoginHandler(repo db.UserRepositoryInterface, secretKey []byte, timeoutS
 	}
 }
 
+func CheckAdmin(ctx *gin.Context) {
+	adminVal, exists := ctx.Get("isAdmin")
+	if !exists {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing admin claim"})
+		return
+	}
+	isAdmin, ok := adminVal.(bool)
+	if !ok {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid admin claim type"})
+		return
+	}
+	if !isAdmin {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "fuck you"})
+		return
+	}
+	ctx.Next()
+}
+
 func (h *LoginHandler) Login(ctx *gin.Context) {
 	var credentials Credentials
 	err := ctx.ShouldBindJSON(&credentials)
@@ -60,7 +78,11 @@ func (h *LoginHandler) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "opsie"})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"token": tokenString})
+	if user.IsAdmin {
+		ctx.JSON(http.StatusOK, gin.H{"token": tokenString, "role": "admin"})
+	} else {
+		ctx.JSON(http.StatusOK, gin.H{"token": tokenString, "role": "user"})
+	}
 }
 
 func (h *LoginHandler) PiLogin(ctx *gin.Context) {
