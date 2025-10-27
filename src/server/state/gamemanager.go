@@ -33,7 +33,7 @@ func NewGameManager() *GameManager {
 	return &GameManager{
 		GameStatus:           Idle,
 		Mutex:                sync.Mutex{},
-		CurrentSession:       nil,
+		CurrentSession:       NewSession(),
 		WsLeaderBoards:       make(map[*websocket.Conn]bool),
 		BroadCastLeaderBoard: make(chan []byte),
 		WsPis:                make(map[*websocket.Conn]bool),
@@ -73,6 +73,7 @@ func (gm *GameManager) StartGame() error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 	gm.GameStatus = Started
+	gm.Game.startGame(gm.CurrentSession)
 	startMessage := communication.StartedMessage{At: time.Now(), Active: true}
 	jsonData, err := json.Marshal(startMessage)
 	if err != nil {

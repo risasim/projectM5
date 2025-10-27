@@ -9,7 +9,7 @@ import (
 // GameMode does prescribe functions that all of the GameModes share
 type GameMode interface {
 	// startGame does all that is needed to run the game
-	startGame()
+	startGame(sess *Session)
 	// registerHit() is a function to respond to getting a hit alert from the infrared receiver
 	registerHit(dt communication.HitData) communication.HitResponse
 	// generateData is a function to generate the leaderboard data
@@ -164,7 +164,8 @@ func (tdm *TeamDeathMatch) finished() bool {
 }
 
 // startGame does initilise the game by splitting the users into two teams
-func (tdm *TeamDeathMatch) startGame() {
+func (tdm *TeamDeathMatch) startGame(sess *Session) {
+	tdm.session = *sess
 	team1 := Team{
 		score:   1500,
 		name:    "kittens",
@@ -183,6 +184,15 @@ func (tdm *TeamDeathMatch) startGame() {
 			team2.members = append(team2.members, tdm.session.player[i])
 		}
 	}
+}
+
+func (ffl *FreeForAll) startGame(sess *Session) {
+	ffl.session = *sess
+}
+
+func (inf *Infected) startGame(sess *Session) {
+	inf.session = *sess
+	//TODO to select the first infected person and sent to
 }
 
 // Team are the collaborating players,they cannot kill each other
@@ -228,6 +238,14 @@ type Session struct {
 	player   []Player
 	hitData  []communication.HitData
 	GameType communication.GameType
+}
+
+func NewSession() *Session {
+	return &Session{
+		player:   make([]Player, 0),
+		hitData:  make([]communication.HitData, 0),
+		GameType: communication.Freefall,
+	}
 }
 
 // Holds basic player information
