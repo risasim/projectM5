@@ -26,6 +26,24 @@ type FreeForAll struct {
 	session Session
 }
 
+func NewFreeForAll(session *Session) *FreeForAll {
+	return &FreeForAll{
+		deadPeople: make([]Player, 0),
+		session:    *session,
+	}
+}
+
+func NewInfected(session *Session) *FreeForAll {
+	return &FreeForAll{
+		deadPeople: make([]Player, 0),
+		session:    *session,
+	}
+}
+
+func NewTeamDeatchMatch(session *Session) *TeamDeathMatch {
+	return &TeamDeathMatch{}
+}
+
 // registerHit in freefall does add the user to the death people without reviving
 func (ffl *FreeForAll) registerHit(dt communication.HitData) communication.HitResponse {
 	for i := range ffl.session.player {

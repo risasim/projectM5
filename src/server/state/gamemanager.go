@@ -38,6 +38,7 @@ func NewGameManager() *GameManager {
 		BroadCastLeaderBoard: make(chan []byte),
 		WsPis:                make(map[*websocket.Conn]bool),
 		BroadcastPis:         make(chan []byte),
+		Game:                 NewFreeForAll(NewSession()),
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
