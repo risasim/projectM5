@@ -18,10 +18,9 @@ socket = None
 piNumb = "ae616eb0e54290a6"
 
 #game relevant vars
+
 alive = False
-gameMode = None
-
-
+gamealive = False
 
 
 
@@ -48,18 +47,27 @@ class WebClient:
         # self.transmitterThread = TransmitterThread(self)
 
         #Handle the initial get request to obtain a token for the websocket. 
-
+        token = None
+        auth_header = {
+            "Authorization" f"Bearer {token}"
+        }
         try:
             
-            requests.get(self.serverUrl + "/piAuth",json={"apiKey": 1234, "piSn": piNumb},headers={"Accept": "application/json"}
+            r = requests.get(self.serverUrl + "/piAuth",json={"apiKey": 1234, "piSn": piNumb},headers={"Accept": "application/json"}
                 #what do we do with the response of this request?
             )
+            if r.status_code == 200:
+                received = r.json()
+                token = received.token 
+            else: 
+                print("not successedesdfesafd")
         except requests.exceptions.RequestException:
             pass 
 
     async def handler(self):
         try: 
-            async with websockets.connect(self.serverUrl + "/api/wsPis") as webSocket:
+            global auth_header
+            async with websockets.connect(self.serverUrl + "/api/wsPis",additional_headers=auth_header) as webSocket:
 
                 print("Creation of Websocket Completed.")
 
@@ -89,8 +97,12 @@ class WebClient:
             global alive
             match object.msgtype:
                 case "Start":
-                    gameMode = object.data.gameMode
-                    alive = True
+                    if object.Data.active:
+                        alive = True
+                    else:
+                        alive = False
+
+                    gamealive = True
 
                 case "HitResponseMsg":
                     if object.Data.playSound:
@@ -105,6 +117,10 @@ class WebClient:
                             time.sleep(object.Data.reviveIn)
                             alive = True
                         Thread(target=revive, args=(object,))
+                case "End":
+                    gamealive = False
+
+
 
     def start(self):
         self.running.clear()
