@@ -4,7 +4,6 @@
       <div class="adminboard-container">
         <div class="top-buttons">
           <div class="left-buttons">
-            <button class="adminboard-btn" @click="$router.push('/login')"> Add players </button>
             <button class="adminboard-btn" @click="$router.push('/adminedit')"> Manage players </button>
           </div>
 

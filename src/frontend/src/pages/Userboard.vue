@@ -69,7 +69,7 @@ export default {
         });
 
         URL.revokeObjectURL(audioURL);
-        alert('File accepted!');
+        alert('Audio uploaded.');
       } catch (err) {
         console.error('Audio validation failed:', err);
       }
