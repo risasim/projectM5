@@ -18,12 +18,15 @@ func SeedAdmin(db *sql.DB) {
 			log.Fatal("Failed to hash admin password:", err)
 		}
 
-		_, err = db.Exec(`INSERT INTO users (username, password, isAdmin) VALUES ($1, $2, $3)`,
-			"admin", passwordHash, true)
+		deathSound := "default"
+		piNum := "ae616eb0e54290a6"
+
+		_, err = db.Exec(`INSERT INTO users (username, password, isAdmin, deathSound, pi_SN) VALUES ($1, $2, $3, $4, $5)`,
+			"admin", passwordHash, true, deathSound, piNum)
 		if err != nil {
 			log.Fatal("Failed to create admin user:", err)
 		}
 
-		log.Println("Admin user created: username=admin, password=adminpass")
+		log.Println("Admin user created: username=admin, password=adminpass 45")
 	}
 }

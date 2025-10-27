@@ -127,8 +127,8 @@ func (u UsersRepository) GetUser(username string) (*model.GetUserAuth, error) {
 		&user.Username,
 		&user.Password,
 		&user.DeathSound,
-		&user.PiSN,
 		&user.ApiKey,
+		&user.PiSN,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
