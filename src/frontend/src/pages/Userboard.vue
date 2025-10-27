@@ -2,44 +2,62 @@
   <div class="page-container">
     <div class="userboard-page">
       <div class="userboard-container">
-
         <div class="floating-userboard-title">
           <h1>Userboard</h1>
         </div>
 
         <div class="userboard-top">
           <div class="user-info">
-            <h2 class="username">Username: <span class="value">Berk</span></h2>
-            <p class="team">Team: <span class="value team">Red (toggle)</span></p>
+            <h2 class="username">Username: <span class="value">{{ username }}</span></h2>
+            <p class="team">Team: <span class="value team">{{ team }}</span></p>
           </div>
 
-          <router-link to="/leaderboard"><button class="leaderboard-btn">Leaderboard</button></router-link>
+          <router-link to="/leaderboard">
+            <button class="leaderboard-btn">Leaderboard</button>
+          </router-link>
         </div>
 
         <div class="stats-section">
-          <p>Your Total Victories: <span class="value">12</span></p>
-          <p>Total Deaths: <span class="value">37</span></p>
+          <p>Your Total Victories: <span class="value">{{ victories }}</span></p>
+          <p>Total Deaths: <span class="value">{{ deaths }}</span></p>
         </div>
 
         <div class="sfx-section">
           <label for="deathSfx" class="sfx-label">Custom Death SFX:</label>
-          <input id="deathSfx" type="file"  accept=".mp3, .ogg, .wav"  class="sfx-input"  @change="handleFileUpload" />
+          <input id="deathSfx" type="file" accept=".mp3, .ogg, .wav" class="sfx-input" @change="handleFileUpload" />
         </div>
 
         <div class="session-status">
-          <p>Session status: <span class="status active">Waiting for players</span></p>
+          <p>Session status: <span :class="['status', sessionStatus]">{{ sessionStatusText }}</span></p>
         </div>
 
-        <button class="enter-session-btn">Enter current game session</button>
+        <button class="enter-session-btn" @click="enterSession">Enter current game session</button>
       </div>
     </div>
-  </div>  
+  </div>
 </template>
 
 <script>
 export default {
   name: 'UserBoard',
+  data() {
+    return {
+      username: localStorage.getItem('username') || 'Unknown',
+      team: 'Unknown',
+      victories: 0,
+      deaths: 0,
+      sessionStatus: 'waiting',
+    };
+  },
+  computed: {
+    sessionStatusText() {
+      if (this.sessionStatus === 'active') return 'Active';
+      if (this.sessionStatus === 'waiting') return 'Waiting for players';
+      return 'Inactive';
+    }
+  },
   methods: {
+    // upload sound to backend
     async handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -54,7 +72,6 @@ export default {
       try {
         const audioURL = URL.createObjectURL(file);
         const audio = new Audio(audioURL);
-
         await new Promise((resolve, reject) => {
           audio.onloadedmetadata = () => {
             if (audio.duration > 5) {
@@ -62,16 +79,55 @@ export default {
               event.target.value = '';
               URL.revokeObjectURL(audioURL);
               reject();
-            } else {
-              resolve();
-            }
+            } else resolve();
           };
         });
-
         URL.revokeObjectURL(audioURL);
-        alert('Audio uploaded.');
+
+        // upload to backend
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('You must log in again.');
+          return;
+        }
+        const formData = new FormData();
+        formData.append('sound', file);
+        const response = await fetch(`/api/uploadSound?username=${encodeURIComponent(this.username)}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        });
+        const data = await response.json();
+        if (data.status === 'success') alert('Sound uploaded successfully!');
+        else alert(data.error || 'Upload failed.');
+
       } catch (err) {
         console.error('Audio validation failed:', err);
+      }
+    },
+
+    // join the game session
+    async enterSession() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You must log in first.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/joinGame?username=${encodeURIComponent(this.username)}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          alert('Joined game successfully!');
+          this.sessionStatus = 'active';
+        } else {
+          alert(data.error || 'Failed to join game.');
+        }
+      } catch (err) {
+        console.error('Join game failed:', err);
       }
     }
   }

@@ -5,27 +5,28 @@
         <h1 class="leaderboard-title">Leaderboard (Team Deathmatch)</h1>
       </div>
 
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Deaths</th>
-            <th>Score (Hits)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(player, index) in players" :key="player.name">
-            <td>{{ index + 1 }}</td>
-            <td>{{ player.name }}</td>
-            <td>{{ player.deaths }}</td>
-            <td>{{ player.score }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-for="(team, index) in teams" :key="team.name" class="team-section">
+        <h2 class="team-name">{{ index + 1 }}. {{ team.name }} — Score: {{ team.score }}</h2>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Deaths</th>
+              <th>Score (Hits)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="member in team.members" :key="member.username">
+              <td>{{ member.username }}</td>
+              <td>{{ member.deaths }}</td>
+              <td>{{ member.score }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <div>
-        <button class="back-btn" @click="goBack">Back</button>     
+        <button class="back-btn" @click="goBack">Back</button>
       </div>
     </div>
   </div>
@@ -33,27 +34,69 @@
 
 <script>
 export default {
-  name: 'LeaderboardFFA',
+  name: 'LeaderboardTDM',
   data() {
     return {
-      players: [
-        { name: 'Berk', deaths: 3, score: 27 },
-        { name: 'Orbay', deaths: 2, score: 25 },
-        { name: 'Richard', deaths: 9, score: 14 },
-        { name: 'Peter', deaths: 3, score: 9 },
-        { name: 'Muhammed', deaths: 7, score: 8 },
-        { name: 'Marciano', deaths: 2, score: 4 }
-      ]
-    }
+      teams: [],
+      ws: null
+    };
   },
   methods: {
     goBack() {
       this.$router.go(-1);
-    }
-  }
-}
-</script>
+    },
+    connectLeaderboard() {
 
+      const wsUrl = `ws://116.203.97.62:8080/api/wsLeaderboard`;
+      this.ws = new WebSocket(wsUrl);
+
+      this.ws.onopen = () => {
+        console.log('Connected to leaderboard WebSocket (TDM)');
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+
+          // only for TDM updates
+          if (message.game_type && message.game_type.toLowerCase() === 'teamdeathmatch') {
+            const teamsData = message.data?.teams || [];
+            this.teams = teamsData.map(team => ({
+              name: team.name,
+              score: team.score || 0,
+              members: team.members.map(m => ({
+                username: m.username,
+                deaths: m.deaths || 0,
+                score: m.score || 0
+              }))
+            }));
+
+            // sort by the score by descending order
+            this.teams.sort((a, b) => b.score - a.score);
+          }
+        } catch (err) {
+          console.error('WS parse error:', err);
+        }
+      };
+
+      this.ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+      };
+
+      this.ws.onclose = () => {
+        console.log('WebSocket closed. Reconnecting in 5s...');
+        setTimeout(() => this.connectLeaderboard(), 5000);
+      };
+    }
+  },
+  mounted() {
+    this.connectLeaderboard();
+  },
+  beforeUnmount() {
+    if (this.ws) this.ws.close();
+  }
+};
+</script>
 
 <style scoped>
 .leaderboard-page {
@@ -194,6 +237,4 @@ export default {
     padding: 2.5vw 6vw;
   }
 }
-
 </style>
-

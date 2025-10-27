@@ -56,7 +56,7 @@ export default {
             username: user.value,
             password: pass.value
           })
-        })
+        });
 
         if (!response.ok) throw new Error('Login failed')
         const data = await response.json()
