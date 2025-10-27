@@ -6,16 +6,24 @@ import websockets
 import json
 #Used to make a http request at the start of a connection.
 import requests
-
 import os
 from web import web
 from threading import Thread,Lock,Event
 from queue import Queue,Empty
-url = "https://local"
+from datetime import datetime
+import mediaplayer
+
+url = "http://116.203.97.62:8080"
 socket = None
-
-
 piNumb = "ae616eb0e54290a6"
+
+#game relevant vars
+alive = False
+gameMode = None
+
+
+
+
 
 class PlayerState:
 
@@ -44,11 +52,10 @@ class WebClient:
         try:
             
             requests.get(self.serverUrl + "/piAuth",json={"apiKey": 1234, "piSn": piNumb},headers={"Accept": "application/json"}
-                
+                #what do we do with the response of this request?
             )
         except requests.exceptions.RequestException:
-            pass
-        
+            pass 
 
     async def handler(self):
         try: 
@@ -66,7 +73,7 @@ class WebClient:
 
                     try:
                         message = await asyncio.wait_for(webSocket.recv,0.1 )
-                        self.processReception(json.loads(message))
+                        self.processReception(self,json.loads(message))
                     except asyncio.TimeoutError:
                         pass
                     except websockets.exceptions.ConnectionClosedOK:
@@ -75,16 +82,29 @@ class WebClient:
                     await asyncio.sleep(0.1)
         except Exception:
             print("Websocket Error!")
+
+    #Handle the received message
     
-    def processReception(object):
-
+    def processReception(self,object):
+            global alive
             match object.msgtype:
+                case "Start":
+                    gameMode = object.data.gameMode
+                    alive = True
 
-                case "start":
-                    pass
-                case "dead":
-                    pass
+                case "HitResponseMsg":
+                    if object.Data.playSound:
+                        mediaplayer.playSound(object.Data.soundName)
 
+                    if object.Data.dead:
+                      alive = False
+                    
+                    if object.Data.revive:
+                        def revive(object):
+                            global alive
+                            time.sleep(object.Data.reviveIn)
+                            alive = True
+                        Thread(target=revive, args=(object,))
 
     def start(self):
         self.running.clear()
@@ -143,79 +163,88 @@ from signal import pause
 from Gunside.Transmitter import shoot
 
 
-if __name__ == "__main__":
-    
-    try:
-        url = "http://116.203.97.62:8080"
-        client = WebClient(url)
-        global alive = False
-        GPIO_PIN = 15 # enter the pin that will be used
-        counter = 0
-
-        PIN = 17
-        ir_sensor = None
-            
-        ir_sensor = Button(PIN, pull_up=True, bounce_time=0.5)
 
 
+try:
 
-        sensor = Button(GPIO_PIN, pull_up=True)
-        original_handler = None    
-        def buttonpress():
-            global counter
-            global original_handler
-            if original_handler is None:
-                original_handler = sensor.when_pressed
-            
-            
-            sensor.when_pressed = None
-            try:
-                if not alive:
-                    Gunled.changecolor("NONE")
-                    return
-                Gunled.changecolor("RED")
-                shoot() #maybe do this async
-                
-                counter += 1
-                print("counter: " + str((counter % 6)))
-                if counter % 6 == 0:
-                    time.sleep(2)
-                
-                Gunled.changecolor("GREEN")
-            finally:
-                sensor.when_pressed = buttonpress
+    client = WebClient(url)
+    global alive = False
+    GPIO_PIN = 15 # enter the pin that will be used
+    counter = 0
+
+    PIN = 17
+    ir_sensor = None
+        
+    ir_sensor = Button(PIN, pull_up=True, bounce_time=0.5)
 
 
 
-            
-        def signal_received():
-            global i
-            print(f"signal received i got hit for the : {i} time")
-            i += 1
-            
-            
-            
-            
+    sensor = Button(GPIO_PIN, pull_up=True)
+    original_handler = None   
 
 
-        ir_sensor.when_pressed = signal_received
-        sensor.when_pressed = buttonpress
-
-
-
-
-         
+    def buttonpress():
+        global counter
+        global original_handler
+        if original_handler is None:
+            original_handler = sensor.when_pressed
+        
+        
+        sensor.when_pressed = None
         try:
-            client.start()
-        except KeyboardInterrupt:
-            print("Interruption Occured.")
+            if not alive:
+                Gunled.changecolor("NONE")
+                return
+            Gunled.changecolor("RED")
+            shoot() #maybe do this async
+            
+            counter += 1
+            print("counter: " + str((counter % 6)))
+            if counter % 6 == 0:
+                time.sleep(2)
+            
+            Gunled.changecolor("GREEN")
         finally:
-            client.stop()
-    except Exception as e:
-        print(f"e = {e}")
+            sensor.when_pressed = buttonpress
+
+
+
+        
+    def signal_received():
+        global i
+        print(f"signal received i got hit for the : {i} time")
+        i += 1
+
+        obj =  {}
+        obj.msgType = "HitDataMsg"
+        obj.Data = {}
+        obj.Data.victim = id
+        obj.Data.timestamp = datetime.now().isoformat()
+        client.queue.put(json.dumps(obj))
+        
+        
+        
+        
+
+
+    ir_sensor.when_pressed = signal_received
+    sensor.when_pressed = buttonpress
+
+
+
+
+        
+    try:
+        client.start()
+    except KeyboardInterrupt:
+        print("Interruption Occured.")
     finally:
-        sensor.close()
-        ir_sensor.close()
+        client.stop()
+except Exception as e:
+    print(f"e = {e}")
+finally:
+    sensor.close()
+    ir_sensor.close()
 
 
 
