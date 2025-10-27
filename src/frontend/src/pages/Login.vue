@@ -60,10 +60,13 @@ export default {
 
         if (!response.ok) throw new Error('Login failed')
         const data = await response.json()
+        console.log('Auth response data:', data)
+
 
         // Store token 
         localStorage.setItem('authToken', data.token)
         console.log('Token stored:', data.token)
+        
 
         // Redirect
         if (isAdmin) {

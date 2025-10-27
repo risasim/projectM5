@@ -58,6 +58,11 @@ export default {
   },
   mounted() {
     this.checkAuthStatus();
+        window.addEventListener('storage', this.checkAuthStatus);
+  },
+  beforeUnmount() {
+    window.removeEventListener('storage', this.checkAuthStatus);
+
   },
   methods: {
     checkAuthStatus() {
