@@ -9,12 +9,13 @@ func main() {
 	app := &app.App{}
 	app.InitDatabase()
 	app.SetupLogin()
-	app.CreateRoutes()
 
 	gameManager := state.NewGameManager()
 	// run the broacasters in its own go routines
 	go gameManager.BroadcastLeaderBoardHandler()
 	go gameManager.BroadcastPisHandler()
+	app.GameManager = gameManager
+	app.CreateRoutes()
 
 	app.Run(gameManager)
 }

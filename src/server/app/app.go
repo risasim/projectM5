@@ -123,7 +123,7 @@ func (a *App) Migrate() {
 func (a *App) InitDatabase() {
 	a.CreateConnection()
 	a.Migrate()
-	db.SeedAdmin(a.DB)
+	db.SeedUsers(a.DB)
 }
 
 func (a *App) CreateRoutes() {

@@ -55,11 +55,15 @@ func (u UsersRepository) DeleteUser(username string) error {
 
 func (u UsersRepository) GetPiUser(piSN string) (*model.GetUserAuth, error) {
 	var user model.GetUserAuth
-	err := u.db.QueryRow("SELECT * FROM users WHERE pi_SN = $1 ", piSN).Scan(
+	err := u.db.QueryRow(`
+    SELECT id, username, password, isAdmin, deathSound, pi_SN, api_key
+    FROM users
+    WHERE pi_SN = $1
+`, piSN).Scan(
 		&user.ID,
-		&user.IsAdmin,
 		&user.Username,
 		&user.Password,
+		&user.IsAdmin,
 		&user.DeathSound,
 		&user.PiSN,
 		&user.ApiKey,

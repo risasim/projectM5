@@ -46,6 +46,11 @@ func NewGameManager() *GameManager {
 	}
 }
 
+// GenericMessage for checking message type before processing
+type GenericMessage struct {
+	Type string `json:"type"`
+}
+
 // CreateNewGame starts a new game session
 func (gm *GameManager) CreateNewGame(gameType communication.GameType) error {
 	gm.Mutex.Lock()
@@ -89,7 +94,7 @@ func (gm *GameManager) EndGame() error {
 	defer gm.Mutex.Unlock()
 
 	gm.GameStatus = Idle
-	gm.CurrentSession = nil
+	gm.CurrentSession = NewSession()
 	endMessage := communication.EndedMessage{At: time.Now()}
 	jsonData, err := json.Marshal(endMessage)
 	if err != nil {
@@ -136,54 +141,186 @@ func (gm *GameManager) RemovePlayer(player Player) error {
 	return fmt.Errorf("error trying to remove player with this ID")
 }
 
-func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context) {
-	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer conn.Close()
-	gm.Mutex.Lock()
-	gm.WsPis[conn] = true
-	gm.Mutex.Unlock()
-
-}
-
 func (gm *GameManager) WsPisHandler(c *gin.Context) {
 	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	defer conn.Close()
 
 	gm.Mutex.Lock()
 	gm.WsPis[conn] = true
 	gm.Mutex.Unlock()
 
-	go gm.handlePiConnection(conn)
+	gm.handlePiConnection(conn)
+}
 
+func (gm *GameManager) WsLeaderBoardHandler(c *gin.Context) {
+	conn, err := gm.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	gm.Mutex.Lock()
+	gm.WsLeaderBoards[conn] = true
+	gm.Mutex.Unlock()
+
+	gm.handleLeaderBoardConnection(conn)
+}
+
+// handleLeaderBoardConnection maintains connection with leaderboard clients
+func (gm *GameManager) handleLeaderBoardConnection(conn *websocket.Conn) {
+	defer func() {
+		conn.Close()
+		gm.Mutex.Lock()
+		delete(gm.WsLeaderBoards, conn)
+		gm.Mutex.Unlock()
+		fmt.Println("Leaderboard connection closed and removed from pool")
+	}()
+
+	// Set read deadline and pong handler for keepalive
+	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	conn.SetPongHandler(func(string) error {
+		fmt.Println("Received pong from leaderboard client")
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
+	// Channel to signal goroutine to stop
+	done := make(chan struct{})
+	defer close(done)
+
+	// Send a ping every 30 seconds
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	// Handle pings in a separate goroutine
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
+					fmt.Println("Error sending ping to leaderboard:", err)
+					return
+				}
+				//fmt.Println("Sent ping to leaderboard client")
+			case <-done:
+				fmt.Println("Stopping leaderboard ping sender")
+				return
+			}
+		}
+	}()
+
+	// Listen for messages from leaderboard (usually just pings/pongs)
+	for {
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				fmt.Println("Leaderboard client disconnected normally")
+			} else {
+				fmt.Println("Leaderboard connection error:", err)
+			}
+			break
+		}
+
+		// Check if it's a ping/keepalive message
+		var genericMsg GenericMessage
+		if err := json.Unmarshal(message, &genericMsg); err == nil {
+			if genericMsg.Type == "ping" {
+				//fmt.Println("Received keepalive ping from leaderboard client")
+				conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+				continue
+			}
+		}
+
+		// Log any other messages (leaderboards typically only receive broadcasts)
+		fmt.Printf("Leaderboard sent: %s\n", message)
+	}
 }
 
 // handlePiConnection does listen to being hit and in case that
 func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
-	defer conn.Close()
+	defer func() {
+		conn.Close()
+		gm.Mutex.Lock()
+		delete(gm.WsPis, conn)
+		gm.Mutex.Unlock()
+		fmt.Println("Pi connection closed and removed from pool")
+	}()
+
+	// Set read deadline and pong handler for keepalive
+	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	conn.SetPongHandler(func(string) error {
+		fmt.Println("Received pong from client")
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
+	// Channel to signal goroutine to stop
+	done := make(chan struct{})
+	defer close(done)
+
+	// Send a ping every 30 seconds
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	// Handle pings in a separate goroutine with proper cleanup
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
+					fmt.Println("Error sending ping:", err)
+					return
+				}
+				fmt.Println("Sent ping to client")
+			case <-done:
+				fmt.Println("Stopping Pi ping sender")
+				return
+			}
+		}
+	}()
 
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println("Error reading message:", err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				fmt.Println("Client disconnected normally")
+			} else {
+				fmt.Println("Error reading message:", err)
+			}
 			break
 		}
 
 		fmt.Printf("Received: %s\n", message)
 
+		// First, check if it's a ping/keepalive message
+		var genericMsg GenericMessage
+		if err := json.Unmarshal(message, &genericMsg); err == nil {
+			if genericMsg.Type == "ping" {
+				fmt.Println("Received keepalive ping from client")
+				// Reset read deadline on ping
+				conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+				continue // Skip processing pings as hit data
+			}
+		}
+
+		// Try to parse as hit data
 		var hitData communication.HitData
 		if err := json.Unmarshal(message, &hitData); err != nil {
 			fmt.Println("Error unmarshalling hit data:", err)
+			// Send error response back to client
+			errorResponse := map[string]string{
+				"error":   "invalid_format",
+				"message": "Could not parse hit data",
+			}
+			responseJSON, _ := json.Marshal(errorResponse)
+			conn.WriteMessage(websocket.TextMessage, responseJSON)
 			continue
 		}
 
+		// Process the hit
 		res := gm.Game.registerHit(hitData)
 
 		responseJSON, err := json.Marshal(res)
@@ -196,6 +333,8 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 			fmt.Println("Error writing message:", err)
 			break
 		}
+
+		fmt.Printf("Processed hit from %s\n", hitData.Victim)
 	}
 }
 
