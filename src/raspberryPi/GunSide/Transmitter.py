@@ -6,17 +6,15 @@ def shootWithInfo():
     pass
 
 def shoot():
-    IR_CARRIER_FREQ = 38000 
+    IR_CARRIER_FREQ = 38000
     DUTY_CYCLE = 50
 
     try:
-        pwm = HardwarePWM(pwm_channel=2, hz=IR_CARRIER_FREQ, chip=2)
+        pwm = HardwarePWM(pwm_channel=2, hz=IR_CARRIER_FREQ, chip=0)
 
         print("start sending...")
         pwm.start(DUTY_CYCLE)
-        print("sleeping")
-        time.sleep(5)
-        print("not sleeping anymore")
+        time.sleep(1)
 
     except Exception as e:
         print(f"an error occurred: \n {e}")

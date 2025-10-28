@@ -1,57 +1,41 @@
 from gpiozero import Button
 import time
 import Gunled
-import Transmitter
 from signal import pause
-from web import alive
-
+from Transmitter import shoot
 
 
 
 GPIO_PIN = 15 # enter the pin that will be used
 
+counter = 0
 
-timeList = []
 
 sensor = Button(GPIO_PIN, pull_up=True)
 
-minimum = 1000000000
 
-def checkValidPress():
-    
-    if not alive:
-        return "RED"
-    
-    deltaList = []
-    for i in range(0, len(timeList)):
-        j = i + 1
-        if (j >= len(timeList)):
-            break
-        print("-------------------")
-        print(timeList[j])
-        deltaList.append(timeList[j] - timeList[i])
-    
-
-    av = (sum(deltaList)/ len(deltaList)) if not len(deltaList) == 0  else minimum + 1
-    if ( av < minimum):
-        Gunled.changecolor("RED")
-        return "RED"
-    else:
-        Gunled.changecolor("GREEN")
-        return "GREEN"
-    ## check if it is not spammed if so change color to orange / red to and do not shoot
+original_handler = None    
 
 def buttonpress():
-    if (len(timeList) >= 5):
-        timeList.pop(0)
-    timeList.append(time.time_ns())
-    color = checkValidPress()
-    if not (color == "RED"):
-        # send signal to to send IRTransmitter
-        Transmitter.shootWithInfo()
-        Gunled.changecolor("NONE")
-        time.sleep(0.05)
-        Gunled.changecolor(color)
+    global counter
+    global original_handler
+    if original_handler is None:
+        original_handler = sensor.when_pressed
+    
+    
+    sensor.when_pressed = None
+    try:
+        Gunled.changecolor("RED")
+        shoot() #maybe do this async
+        
+        counter += 1
+        print("counter: " + str((counter % 6)))
+        if counter % 6 == 0:
+            time.sleep(2)
+        
+        Gunled.changecolor("GREEN")
+    finally:
+        sensor.when_pressed = buttonpress
 
 
 

@@ -13,7 +13,13 @@ from queue import Queue,Empty
 from datetime import datetime
 import mediaplayer
 
+from gpiozero import Button
+import time
+from GunSide.Gunled import changecolor
+from signal import pause
+from GunSide.Transmitter import shoot
 url = "http://116.203.97.62:8080"
+websockurl = "ws://116.203.97.62:8080"
 socket = None
 piNumb = "ae616eb0e54290a6"
 
@@ -40,6 +46,7 @@ class WebClient:
     def __init__(self,url):
 
         self.serverUrl = url
+        self.websockurl = websockurl
         self.player = PlayerState()
         self.running = Event()
         self.queue = Queue()
@@ -48,26 +55,37 @@ class WebClient:
 
         #Handle the initial get request to obtain a token for the websocket. 
         token = None
-        auth_header = {
-            "Authorization" f"Bearer {token}"
+        self.auth_header = {
+            "Authorization": f"Bearer {token}"
         }
         try:
-            
-            r = requests.get(self.serverUrl + "/piAuth",json={"apiKey": 1234, "piSn": piNumb},headers={"Accept": "application/json"}
+            complete = self.serverUrl + "/piAuth"
+            print(complete)
+            headers = {
+                "Content-Type": "application/json"
+                    }
+            payload = {
+            "apiKey":"123e4567-e89b-12d3-a456-426614174000",
+            "piSn": piNumb
+            }
+            r = requests.post(complete,json=payload,headers=headers
                 #what do we do with the response of this request?
             )
             if r.status_code == 200:
                 received = r.json()
-                token = received.token 
+                print(received)
+                print(r.text)
+                token = received.get(token) 
             else: 
                 print("not successedesdfesafd")
+                print(r.status_code)
+                print(r.text)
         except requests.exceptions.RequestException:
-            pass 
+            print("requeset.exceptions.requestException happend")
 
     async def handler(self):
         try: 
-            global auth_header
-            async with websockets.connect(self.serverUrl + "/api/wsPis",additional_headers=auth_header) as webSocket:
+            async with websockets.connect(self.websockurl + "/api/wsPis",additional_headers=self.auth_header) as webSocket:
 
                 print("Creation of Websocket Completed.")
 
@@ -88,13 +106,14 @@ class WebClient:
                         print("Connection Closed!")
                         break
                     await asyncio.sleep(0.1)
-        except Exception:
-            print("Websocket Error!")
+        except Exception as e:
+            print(f"Websocket Error!\n{e}")
 
     #Handle the received message
     
     def processReception(self,object):
             global alive
+            global gamealive
             match object.msgtype:
                 case "Start":
                     if object.Data.active:
@@ -172,11 +191,7 @@ class WebClient:
 
 
 
-from gpiozero import Button
-import time
-import Gunside.Gunled
-from signal import pause
-from Gunside.Transmitter import shoot
+
 
 
 
@@ -184,7 +199,6 @@ from Gunside.Transmitter import shoot
 try:
 
     client = WebClient(url)
-    global alive = False
     GPIO_PIN = 15 # enter the pin that will be used
     counter = 0
 
@@ -209,9 +223,9 @@ try:
         sensor.when_pressed = None
         try:
             if not alive:
-                Gunled.changecolor("NONE")
+                changecolor("NONE")
                 return
-            Gunled.changecolor("RED")
+            changecolor("RED")
             shoot() #maybe do this async
             
             counter += 1
@@ -219,7 +233,7 @@ try:
             if counter % 6 == 0:
                 time.sleep(2)
             
-            Gunled.changecolor("GREEN")
+            changecolor("GREEN")
         finally:
             sensor.when_pressed = buttonpress
 
