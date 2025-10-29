@@ -9,7 +9,6 @@ red_led = LED(redPin)
 
 
 def changecolor(color):
-    print("changingcolor")
     if (color == "RED"):
         red_led.on()
         green_led.off()
