@@ -10,7 +10,6 @@
               <input v-model="password" type="password" placeholder="Password" class="login-input" />
 
               <button type="button" class="login-button" @click="loginUser(false)">Log In</button>
-              <button type="button" class="login-button" @click="loginUser(true)">Log In (admin)</button>
 
               <p v-if="errorMessage" style="color:red">{{ errorMessage }}</p>
         </form>
@@ -58,27 +57,32 @@ export default {
           })
         });
 
-        if (!response.ok) throw new Error('Login failed')
+        if (!response.ok) {
+          let msg = `${response.status} ${response.statusText}`
+          try { const e = await response.json(); msg = e.error || e.message || msg } catch {}
+          throw new Error(msg)
+        }
+
         const data = await response.json()
         console.log('Auth response data:', data)
 
+        // store token
+        if (!data.token) throw new Error('No token returned from server')
+        localStorage.setItem('authToken', data.token)    
+        localStorage.setItem('userRole', data.role)
+        localStorage.setItem('username', user.value)
 
-        // Store token 
-        localStorage.setItem('authToken', data.token)
-        console.log('Token stored:', data.token)
-        
-
-        // Redirect
-        if (isAdmin) {
-          this.$router.push('/adminboard');
+        // route according to role
+        if (data.role === 'admin') {
+          this.$router.push('/adminboard')
         } else {
-          this.$router.push('/userboard');
+          this.$router.push('/userboard')
         }
       } catch (err) {
-        this.errorMessage = 'Invalid credentials or server error.';
-        console.error(err);
+        this.errorMessage = 'Invalid credentials or server error.'
+        console.error('Login error:', err)
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     }
   }
