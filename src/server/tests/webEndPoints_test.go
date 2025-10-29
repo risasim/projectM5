@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/risasim/projectM5/project/src/server/auth"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -105,6 +106,28 @@ func TestStartGame(t *testing.T) {
 		} else {
 			assert.Equal(t, http.StatusOK, w.Code)
 		}
+	}
+}
+
+func TestStartGameNoAdmin(t *testing.T) {
+	tests := []struct {
+		status state.GameStatus
+	}{
+		{state.Idle},
+		{state.Created},
+		{state.Started},
+	}
+	ta := mock.SetupTestApp(t)
+	badToken, _ := auth.GenerateTestJWT("testuser", false, []byte("jwt_secret"), 60)
+	for _, test := range tests {
+		// Set the game status before making the request
+		ta.App.GameManager.GameStatus = test.status
+
+		req := httptest.NewRequest(http.MethodPost, "/api/startGame", nil)
+		req.Header.Set("Authorization", "Bearer "+badToken)
+		w := httptest.NewRecorder()
+		ta.App.Routes.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusForbidden, w.Code)
 	}
 }
 
