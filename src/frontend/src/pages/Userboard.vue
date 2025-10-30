@@ -22,9 +22,38 @@
           <p>Total Deaths: <span class="value">{{ deaths }}</span></p>
         </div>
 
+        <!-- SFX section -->
         <div class="sfx-section">
           <label for="deathSfx" class="sfx-label">Custom Death SFX:</label>
-          <input id="deathSfx" type="file" accept=".mp3, .ogg, .wav" class="sfx-input" @change="handleFileUpload" />
+
+          <input
+            id="deathSfx"
+            ref="fileInput"
+            type="file"
+            accept=".mp3"
+            class="sfx-input"
+            @change="onFileSelected"
+          />
+
+          <div class="sfx-actions">
+            <button
+              class="upload-btn"
+              @click="uploadSelected"
+              :disabled="!selectedFile || uploading"
+            >
+              <span v-if="uploading">Uploading…</span>
+              <span v-else>Upload</span>
+            </button>
+
+            <button
+              class="play-btn"
+              @click="playSound"
+              :disabled="playing || (!hasSound && !selectedFile)"
+            >
+              <span v-if="playing">Playing…</span>
+              <span v-else>Play sound</span>
+            </button>
+          </div>
         </div>
 
         <div class="session-status">
@@ -47,6 +76,12 @@ export default {
       victories: 0,
       deaths: 0,
       sessionStatus: 'waiting',
+      selectedFile: null,
+      uploading: false,
+      playing: false,
+      hasSound: false,
+      audioObjectUrl: null,
+      previewUrl: null
     };
   },
   computed: {
@@ -56,83 +91,266 @@ export default {
       return 'Inactive';
     }
   },
+  mounted() {
+    this.checkHasSound();
+  },
+  beforeUnmount() {
+    if (this.audioObjectUrl) URL.revokeObjectURL(this.audioObjectUrl);
+    if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+  },
   methods: {
-    // upload sound to backend
-    async handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+    onFileSelected(e) {
+      this.selectedFile = e.target.files[0] || null;
+      console.log('Selected file:', this.selectedFile && this.selectedFile.name);
+      if (this.previewUrl) {
+        URL.revokeObjectURL(this.previewUrl);
+        this.previewUrl = null;
+      }
+      if (this.selectedFile) {
+        this.previewUrl = URL.createObjectURL(this.selectedFile);
+      }
+    },  async fetchSoundFromServer() {
+  const token = localStorage.getItem('authToken');
+  if (!token) return;
 
-      const maxSizeMB = 2;
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        alert('File size must be less than 2 MB.');
-        event.target.value = '';
+  try {
+    const res = await fetch('/api/api/sound', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!res.ok) {
+      console.warn('No uploaded sound found.');
+      this.hasSound = false;
+      return;
+    }
+
+    const blob = await res.blob();
+    if (this.audioObjectUrl) URL.revokeObjectURL(this.audioObjectUrl);
+    this.audioObjectUrl = URL.createObjectURL(blob);
+    this.hasSound = true;
+    console.log('Fetched uploaded sound successfully!');
+  } catch (err) {
+    console.error('Failed to fetch sound:', err);
+    this.hasSound = false;
+  }
+},
+
+    async uploadSelected() {
+      if (!this.selectedFile) {
+        alert('Choose a file first.');
         return;
       }
 
-      try {
-        const audioURL = URL.createObjectURL(file);
-        const audio = new Audio(audioURL);
-        await new Promise((resolve, reject) => {
-          audio.onloadedmetadata = () => {
-            if (audio.duration > 5) {
-              alert('Audio must be less than 5 seconds.');
-              event.target.value = '';
-              URL.revokeObjectURL(audioURL);
-              reject();
-            } else resolve();
-          };
-        });
-        URL.revokeObjectURL(audioURL);
+      const file = this.selectedFile;
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('You must log in again.');
+        return;
+      }
 
-        // upload to backend
-        const token = localStorage.getItem('token');
-        if (!token) {
-          alert('You must log in again.');
-          return;
-        }
-        const formData = new FormData();
-        formData.append('sound', file);
-        const response = await fetch(`/api/uploadSound?username=${encodeURIComponent(this.username)}`, {
+      const username = encodeURIComponent(this.username);
+      const formData = new FormData();
+      formData.append('sound', file);
+
+      this.uploading = true;
+      try {
+        const res = await fetch(`/api/api/uploadSound`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData
         });
-        const data = await response.json();
-        if (data.status === 'success') alert('Sound uploaded successfully!');
-        else alert(data.error || 'Upload failed.');
 
+        let parsed = null;
+        try { parsed = await res.json(); } catch (e) {}
+
+        if (res.ok && parsed && parsed.status === 'success') {
+          alert('Audio uploaded successfully!');
+          this.hasSound = true;
+          if (this.$refs.fileInput) this.$refs.fileInput.value = '';
+          this.selectedFile = null;
+          if (this.previewUrl) {
+            URL.revokeObjectURL(this.previewUrl);
+            this.previewUrl = null;
+          }
+          await this.fetchSoundFromServer();
+        } else {
+          const msg = (parsed && (parsed.error || parsed.message)) || `Upload failed (${res.status})`;
+          alert(msg);
+        }
       } catch (err) {
-        console.error('Audio validation failed:', err);
+        console.error('Upload failed', err);
+        alert('Failed to upload sound. See console for details.');
+      } finally {
+        this.uploading = false;
       }
     },
 
-    // join the game session
+    async playSound() {
+      if (this.playing) return;
+      this.playing = true;
+
+      try {
+        // play selected local file (preview)
+        if (this.selectedFile && this.previewUrl) {
+          console.log('Playing local preview:', this.selectedFile.name);
+          const audio = new Audio(this.previewUrl);
+          audio.onended = () => { this.playing = false; };
+          audio.onerror = () => {
+            this.playing = false;
+            alert('Failed to play preview sound.');
+          };
+          await audio.play();
+          return;
+        }
+
+        // otherwise, play uploaded sound from server
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          alert('You must log in again.');
+          this.playing = false;
+          return;
+        }
+
+        const res = await fetch('/api/api/sound', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          if (res.status === 404) {
+            this.hasSound = false;
+            alert('No uploaded sound found.');
+            return;
+          }
+          throw new Error(`Failed to fetch sound: ${res.status}`);
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        this.audioObjectUrl = url;
+
+        const audio = new Audio(url);
+        audio.onended = () => { this.playing = false; };
+        audio.onerror = () => {
+          this.playing = false;
+          alert('Failed to play uploaded sound.');
+        };
+        await audio.play();
+      } catch (err) {
+        console.error('playSound error:', err);
+        alert('Failed to play sound.');
+        this.playing = false;
+      }
+    },
+
+    async checkHasSound() {
+      const token = localStorage.getItem('authToken');
+      if (!token) { this.hasSound = false; return; }
+
+      try {
+        const res = await fetch('/api/api/sound', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        this.hasSound = res.ok;
+      } catch (err) {
+        console.warn('checkHasSound failed', err);
+        this.hasSound = false;
+      }
+    },
+
     async enterSession() {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       if (!token) {
         alert('You must log in first.');
         return;
       }
 
       try {
-        const response = await fetch(`/api/joinGame?username=${encodeURIComponent(this.username)}`, {
+        const res = await fetch('/api/joinGame', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });
-        const data = await response.json();
-        if (data.status === 'success') {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.status === 'success') {
           alert('Joined game successfully!');
           this.sessionStatus = 'active';
         } else {
-          alert(data.error || 'Failed to join game.');
+          const msg = data.error || data.message || `Failed to join (${res.status})`;
+          alert(msg);
         }
       } catch (err) {
         console.error('Join game failed:', err);
+        alert('Failed to join game.');
       }
     }
   }
-}
+};
 </script>
+
+<style>
+.page-container {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>
+
+<style scoped>
+.userboard-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  background: none;
+}
+
+/* keep your original styling; included minimal extras for sfx area */
+.sfx-section {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5vw;
+  width: 100%;
+}
+
+.sfx-label { margin-right: 0.5rem; }
+
+.sfx-actions {
+  display: inline-flex;
+  gap: 0.6rem;
+  margin-left: 0.5rem;
+}
+
+.upload-btn,
+.play-btn {
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.upload-btn {
+  background: #ff1111; color: white; border: 2px solid #000;
+}
+.play-btn {
+  background: #ffffff; color: #000; border: 2px solid #000;
+}
+
+.upload-btn[disabled],
+.play-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>
+
 
 <style>
 .page-container {
