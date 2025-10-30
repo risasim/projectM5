@@ -7,19 +7,26 @@ import (
 	"path/filepath"
 )
 
-// DefaultDeathSound is the path used when a user has no custom sound
+// DefaultDeathSound is the filename (not full path) used when a user has no custom sound
 var DefaultDeathSound string
 
 func init() {
 	soundDir := "soundEffects"
+
+	// Ensure directory exists — both locally and in Docker
 	if err := os.MkdirAll(soundDir, os.ModePerm); err != nil {
 		log.Fatal("Failed to create soundEffects directory:", err)
 	}
 
-	DefaultDeathSound = filepath.Join(soundDir, "default.mp3")
+	DefaultDeathSound = "default.mp3"
+
+	defaultPath := filepath.Join(soundDir, DefaultDeathSound)
+	if _, err := os.Stat(defaultPath); os.IsNotExist(err) {
+		log.Printf("⚠️ Warning: Default sound file %s not found; make sure it exists in your container/image", defaultPath)
+	}
 }
 
-// SeedUsers creates admin and second user if they don't exist
+// SeedUsers creates default users if they don't exist
 func SeedUsers(db *sql.DB) {
 	users := []struct {
 		username   string
@@ -79,7 +86,7 @@ func SeedUsers(db *sql.DB) {
 				log.Fatal("Failed to create user", u.username, ":", err)
 			}
 
-			log.Printf("User created: username=%s, password=%s 69 \n", u.username, u.password)
+			log.Printf("✅ User created: username=%s, password=%s\n", u.username, u.password)
 		}
 	}
 }

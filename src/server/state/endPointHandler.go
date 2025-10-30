@@ -3,6 +3,7 @@ package state
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/risasim/projectM5/project/src/server/communication"
@@ -90,12 +91,20 @@ func (e EndPointHandler) GetSound(c *gin.Context) {
 	}
 
 	saveDir := "soundEffects"
-	filePath := filepath.Join(saveDir, user.DeathSound)
+	deathSound := user.DeathSound
 
+	// Prevent duplicate "soundEffects" prefix if already stored in DB
+	if strings.HasPrefix(deathSound, "soundEffects/") {
+		deathSound = strings.TrimPrefix(deathSound, "soundEffects/")
+	}
+
+	filePath := filepath.Join(saveDir, deathSound)
+
+	// Check if file exists, try alternatives if not
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		alternativePaths := []string{
-			filepath.Join("..", "soundEffects", user.DeathSound),
-			filepath.Join("..", "..", "soundEffects", user.DeathSound),
+			filepath.Join("..", "soundEffects", deathSound),
+			filepath.Join("..", "..", "soundEffects", deathSound),
 		}
 
 		found := false

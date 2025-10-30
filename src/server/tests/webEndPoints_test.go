@@ -216,6 +216,7 @@ func TestUploadSoundMp3AndNonMp3(t *testing.T) {
 
 func TestGetSoundFile(t *testing.T) {
 	ta := mock.SetupTestApp(t)
+	println(ta.Token)
 	existingReq := httptest.NewRequest(http.MethodGet, "/api/sound", nil)
 	existingReq.Header.Add("Authorization", "Bearer "+ta.Token)
 	w := httptest.NewRecorder()
