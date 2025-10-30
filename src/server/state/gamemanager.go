@@ -192,7 +192,6 @@ func (gm *GameManager) handleLeaderBoardConnection(conn *websocket.Conn) {
 	// Set read deadline and pong handler for keepalive
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
-		fmt.Println("Received pong from leaderboard client")
 		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
@@ -211,12 +210,10 @@ func (gm *GameManager) handleLeaderBoardConnection(conn *websocket.Conn) {
 			select {
 			case <-ticker.C:
 				if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
-					fmt.Println("Error sending ping to leaderboard:", err)
 					return
 				}
 				//fmt.Println("Sent ping to leaderboard client")
 			case <-done:
-				fmt.Println("Stopping leaderboard ping sender")
 				return
 			}
 		}
@@ -332,6 +329,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 
 		// Process the hit
 		res := gm.Game.registerHit(hitData)
+		gm.updateLeaderBoard()
 
 		responseJSON, err1 := json.Marshal(res)
 		if err1 != nil {
