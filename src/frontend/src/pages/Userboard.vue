@@ -8,8 +8,12 @@
 
         <div class="userboard-top">
           <div class="user-info">
-            <h2 class="username">Username: <span class="value">{{ username }}</span></h2>
-            <p class="team">Team: <span class="value team">{{ team }}</span></p>
+            <h2 class="username">
+              Username: <span class="value">{{ username }}</span>
+            </h2>
+            <p class="team">
+              Team: <span class="value team">{{ team }}</span>
+            </p>
           </div>
 
           <router-link to="/leaderboard">
@@ -57,10 +61,15 @@
         </div>
 
         <div class="session-status">
-          <p>Session status: <span :class="['status', sessionStatus]">{{ sessionStatusText }}</span></p>
+          <p>
+            Session status:
+            <span :class="['status', sessionStatus]">{{ sessionStatusText }}</span>
+          </p>
         </div>
 
-        <button class="enter-session-btn" @click="enterSession">Enter current game session</button>
+        <button class="enter-session-btn" @click="enterSession">
+          Enter current game session
+        </button>
       </div>
     </div>
   </div>
@@ -69,6 +78,7 @@
 <script>
 export default {
   name: 'UserBoard',
+
   data() {
     return {
       username: localStorage.getItem('username') || 'Unknown',
@@ -77,13 +87,14 @@ export default {
       deaths: 0,
       sessionStatus: 'waiting',
       selectedFile: null,
-      uploading: false,
-      playing: false,
-      hasSound: false,
+      previewUrl: null,
       audioObjectUrl: null,
-      previewUrl: null
+      hasSound: false,   
+      uploading: false,
+      playing: false
     };
   },
+
   computed: {
     sessionStatusText() {
       if (this.sessionStatus === 'active') return 'Active';
@@ -91,50 +102,125 @@ export default {
       return 'Inactive';
     }
   },
+
   mounted() {
+    // check if there's an uploaded sound on the server
     this.checkHasSound();
   },
+
   beforeUnmount() {
-    if (this.audioObjectUrl) URL.revokeObjectURL(this.audioObjectUrl);
-    if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+    // tidy up object URLs
+    if (this.audioObjectUrl) {
+      URL.revokeObjectURL(this.audioObjectUrl);
+      this.audioObjectUrl = null;
+    }
+    if (this.previewUrl) {
+      URL.revokeObjectURL(this.previewUrl);
+      this.previewUrl = null;
+    }
   },
+
   methods: {
+    // create a preview URL so we can play it immemidaitly
     onFileSelected(e) {
       this.selectedFile = e.target.files[0] || null;
       console.log('Selected file:', this.selectedFile && this.selectedFile.name);
+
+      // remove old preview
       if (this.previewUrl) {
         URL.revokeObjectURL(this.previewUrl);
         this.previewUrl = null;
       }
       if (this.selectedFile) {
-        this.previewUrl = URL.createObjectURL(this.selectedFile);
+        try {
+          this.previewUrl = URL.createObjectURL(this.selectedFile);
+        } catch (err) {
+          console.warn('Could not create preview URL', err);
+          this.previewUrl = null;
+        }
       }
-    },  async fetchSoundFromServer() {
-  const token = localStorage.getItem('authToken');
-  if (!token) return;
+    },
 
-  try {
-    const res = await fetch('/api/api/sound', {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    // fetch the sound from the server and cache it as an object URL
+    async fetchSoundFromServer({ cacheBust = true } = {}) {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.warn('No token for fetchSoundFromServer');
+        return;
+      }
 
-    if (!res.ok) {
-      console.warn('No uploaded sound found.');
-      this.hasSound = false;
-      return;
-    }
+      try {
+        const base = '/api/api/sound';
+        let url;
+          if (cacheBust) {
+            // if base already contains a "?" (has query params), append with &
+          if (base.includes('?')) {
+            url = base + '&cb=' + Date.now();
+          } else {
+            // otherwise append with ?
+            url = base + '?cb=' + Date.now();
+          }
+          } else {
+            // no cache-busting requested — use the base unchanged
+            url = base;
+          }
 
-    const blob = await res.blob();
-    if (this.audioObjectUrl) URL.revokeObjectURL(this.audioObjectUrl);
-    this.audioObjectUrl = URL.createObjectURL(blob);
-    this.hasSound = true;
-    console.log('Fetched uploaded sound successfully!');
-  } catch (err) {
-    console.error('Failed to fetch sound:', err);
-    this.hasSound = false;
-  }
-},
+
+        console.info('[fetchSoundFromServer] requesting', url);
+
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store'
+        });
+
+        console.info('[fetchSoundFromServer] response status:', res.status, res.statusText);
+
+        // debug
+        try {
+          console.info(
+            '[fetchSoundFromServer] headers:',
+            'cache-control=', res.headers.get('cache-control'),
+            'etag=', res.headers.get('etag'),
+            'last-modified=', res.headers.get('last-modified'),
+            'content-length=', res.headers.get('content-length'),
+            'content-type=', res.headers.get('content-type')
+          );
+        } catch (e) {
+          console.warn('Could not read headers', e);
+        }
+
+        if (!res.ok) {
+          console.warn('[fetchSoundFromServer] server returned non-OK status', res.status);
+          this.hasSound = false;
+
+          if (this.audioObjectUrl) {
+            URL.revokeObjectURL(this.audioObjectUrl);
+            this.audioObjectUrl = null;
+          }
+          return;
+        }
+
+        const blob = await res.blob();
+        console.info('[fetchSoundFromServer] got blob, size bytes =', blob.size);
+
+        if (this.audioObjectUrl) {
+          URL.revokeObjectURL(this.audioObjectUrl);
+          this.audioObjectUrl = null;
+        }
+
+        this.audioObjectUrl = URL.createObjectURL(blob);
+        this.hasSound = true;
+        console.info('[fetchSoundFromServer] cached new audioObjectUrl ->', this.audioObjectUrl);
+      } catch (err) {
+        console.error('[fetchSoundFromServer] failed:', err);
+        this.hasSound = false;
+        if (this.audioObjectUrl) {
+          URL.revokeObjectURL(this.audioObjectUrl);
+          this.audioObjectUrl = null;
+        }
+      }
+    },
 
     async uploadSelected() {
       if (!this.selectedFile) {
@@ -149,7 +235,6 @@ export default {
         return;
       }
 
-      const username = encodeURIComponent(this.username);
       const formData = new FormData();
       formData.append('sound', file);
 
@@ -187,7 +272,10 @@ export default {
     },
 
     async playSound() {
-      if (this.playing) return;
+      if (this.playing) {
+        console.info('[playSound] already playing, returning');
+        return;
+      }
       this.playing = true;
 
       try {
@@ -204,33 +292,19 @@ export default {
           return;
         }
 
-        // otherwise, play uploaded sound from server
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          alert('You must log in again.');
+
+        await this.fetchSoundFromServer({ cacheBust: true });
+
+        if (!this.audioObjectUrl) {
+          alert('No uploaded sound found (after fetch).');
           this.playing = false;
           return;
         }
 
-        const res = await fetch('/api/api/sound', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        console.info('[playSound] playing from audioObjectUrl:', this.audioObjectUrl);
 
-        if (!res.ok) {
-          if (res.status === 404) {
-            this.hasSound = false;
-            alert('No uploaded sound found.');
-            return;
-          }
-          throw new Error(`Failed to fetch sound: ${res.status}`);
-        }
-
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        this.audioObjectUrl = url;
-
-        const audio = new Audio(url);
+        // always create a fresh audio instance so it uses the latest blob
+        const audio = new Audio(this.audioObjectUrl);
         audio.onended = () => { this.playing = false; };
         audio.onerror = () => {
           this.playing = false;
@@ -238,8 +312,8 @@ export default {
         };
         await audio.play();
       } catch (err) {
-        console.error('playSound error:', err);
-        alert('Failed to play sound.');
+        console.error('[playSound] error:', err);
+        alert('Failed to play sound. See console for details.');
         this.playing = false;
       }
     },
@@ -253,7 +327,14 @@ export default {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` }
         });
-        this.hasSound = res.ok;
+
+        if (res.ok) {
+          this.hasSound = true;
+          // cache the server-side blob for later playback
+          await this.fetchSoundFromServer();
+        } else {
+          this.hasSound = false;
+        }
       } catch (err) {
         console.warn('checkHasSound failed', err);
         this.hasSound = false;
@@ -311,7 +392,6 @@ export default {
   background: none;
 }
 
-/* keep your original styling; included minimal extras for sfx area */
 .sfx-section {
   display: flex;
   align-items: center;
