@@ -5,8 +5,9 @@
         <h1 class="leaderboard-title">Leaderboard (Team Deathmatch)</h1>
       </div>
 
-      <div v-for="(team, index) in teams" :key="team.name" class="team-section">
+      <div v-for="(team, index) in sortedTeams" :key="team.name" class="team-section">
         <h2 class="team-name">{{ index + 1 }}. {{ team.name }} — Score: {{ team.score }}</h2>
+
         <table class="leaderboard-table">
           <thead>
             <tr>
@@ -16,7 +17,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="member in team.members" :key="member.username">
+            <tr v-for="member in team.sortedMembers" :key="member.username">
               <td>{{ member.username }}</td>
               <td>{{ member.deaths }}</td>
               <td>{{ member.score }}</td>
@@ -25,9 +26,7 @@
         </table>
       </div>
 
-      <div>
-        <button class="back-btn" @click="goBack">Back</button>
-      </div>
+      <button class="back-btn" @click="goBack">Back</button>
     </div>
   </div>
 </template>
@@ -38,54 +37,64 @@ export default {
   data() {
     return {
       teams: [],
-      ws: null
+      websocket: null
     };
+  },
+  computed: {
+    // sort the teams by total score in descending order
+    sortedTeams() {
+      return this.teams
+        .slice()
+        .sort((a, b) => b.score - a.score)
+        .map(team => ({
+          ...team,
+          // each team members sorted by score(descending) and deaths(ascending)
+          sortedMembers: team.members
+            .slice()
+            .sort((a, b) => b.score - a.score || a.deaths - b.deaths)
+        }));
+    }
   },
   methods: {
     goBack() {
       this.$router.go(-1);
     },
     connectLeaderboard() {
+      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard`;
+      this.websocket = new WebSocket(websocketURL);
 
-      const wsUrl = `ws://116.203.97.62:8080/api/wsLeaderboard`;
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
+      this.websocket.onopen = () => {
         console.log('Connected to leaderboard WebSocket (TDM)');
       };
 
-      this.ws.onmessage = (event) => {
+      this.websocket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
 
-          // only for TDM updates
-          if (message.game_type && message.game_type.toLowerCase() === 'teamdeathmatch') {
-            const teamsData = message.data?.teams || [];
-            this.teams = teamsData.map(team => ({
+          // only to process the team deathmatch
+          if (message.game_type?.toLowerCase() === 'teamdeathmatch' && Array.isArray(message.teams)) {
+            this.teams = message.teams.map(team => ({
               name: team.name,
               score: team.score || 0,
-              members: team.members.map(m => ({
+              members: team.members?.map(m => ({
                 username: m.username,
                 deaths: m.deaths || 0,
                 score: m.score || 0
-              }))
+              })) || []
             }));
-
-            // sort by the score by descending order
-            this.teams.sort((a, b) => b.score - a.score);
           }
-        } catch (err) {
-          console.error('WS parse error:', err);
+        } catch (error) {
+          console.error('WebSocket parse error:', error);
         }
       };
 
-      this.ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
+      this.websocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
       };
 
-      this.ws.onclose = () => {
+      this.websocket.onclose = () => {
         console.log('WebSocket closed. Reconnecting in 5s...');
-        setTimeout(() => this.connectLeaderboard(), 5000);
+        setTimeout(this.connectLeaderboard, 5000);
       };
     }
   },
@@ -93,7 +102,7 @@ export default {
     this.connectLeaderboard();
   },
   beforeUnmount() {
-    if (this.ws) this.ws.close();
+    if (this.websocket) this.websocket.close();
   }
 };
 </script>

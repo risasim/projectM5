@@ -15,7 +15,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(player, index) in players" :key="player.username">
+          <tr v-for="(player, index) in sortedPlayers" :key="player.username">
             <td>{{ index + 1 }}</td>
             <td>{{ player.username }}</td>
             <td :style="{ color: player.infected ? 'red' : 'blue' }">
@@ -26,9 +26,7 @@
         </tbody>
       </table>
 
-      <div>
-        <button class="back-btn" @click="goBack">Back</button>
-      </div>
+      <button class="back-btn" @click="goBack">Back</button>
     </div>
   </div>
 </template>
@@ -39,54 +37,52 @@ export default {
   data() {
     return {
       players: [],
-      ws: null
+      websocket: null
     };
+  },
+  computed: {
+    // sorting: survivors first, then highest score
+    sortedPlayers() {
+      return this.players.slice().sort((a, b) =>
+        Number(a.infected) - Number(b.infected) || b.score - a.score
+      );
+    }
   },
   methods: {
     goBack() {
       this.$router.go(-1);
     },
     connectLeaderboard() {
+      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard`;
+      this.websocket = new WebSocket(websocketURL);
 
-      // connect to websocket
-      const wsUrl = `ws://116.203.97.62:8080/api/wsLeaderboard`;
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
-        console.log('Connected to leaderboard WebSocket (INFECTED)');
+      this.websocket.onopen = () => {
+        console.log('Connected to leaderboard WebSocket (Infected)');
       };
 
-      this.ws.onmessage = (event) => {
+      this.websocket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
 
-          // checks game type
-          if (message.game_type && message.game_type.toLowerCase() === 'infected') {
-            const infectedNames = message.data?.infected?.map(p => p.username) || [];
-            const playerList = message.players || [];
-
-            // combines survivors and infected
-            this.players = playerList.map((p, i) => ({
-              username: p.username,
-              infected: infectedNames.includes(p.username),
-              score: p.score || Math.floor(Math.random() * 30)
+          if (message.game_type?.toLowerCase() === 'infected' && Array.isArray(message.players)) {
+            this.players = message.players.map(player => ({
+              username: player.username,
+              infected: !!player.infected,
+              score: player.score || 0
             }));
-
-            // sorting, survivors first
-            this.players.sort((a, b) => Number(a.infected) - Number(b.infected));
           }
-        } catch (err) {
-          console.error('WS parse error:', err);
+        } catch (error) {
+          console.error('WebSocket parse error:', error);
         }
       };
 
-      this.ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
+      this.websocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
       };
 
-      this.ws.onclose = () => {
-        console.log('WebSocket closed. Reconnecting in 5s...');
-        setTimeout(() => this.connectLeaderboard(), 5000);
+      this.websocket.onclose = () => {
+        console.log('WebSocket closed. Reconnecting in 5 seconds...');
+        setTimeout(this.connectLeaderboard, 5000);
       };
     }
   },
@@ -94,7 +90,7 @@ export default {
     this.connectLeaderboard();
   },
   beforeUnmount() {
-    if (this.ws) this.ws.close();
+    if (this.websocket) this.websocket.close();
   }
 };
 </script>
