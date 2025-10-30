@@ -18,16 +18,14 @@
           <tr v-for="player in players" :key="player.username">
             <td>{{ player.username }}</td>
             <td>{{ player.team || '-' }}</td>
-            <td :class="player.online ? 'alive' : 'dead'">
-              {{ player.online ? 'Online' : 'Offline' }}
-            </td>
+            <td class="alive">Online</td>
             <td>
               <button class="edit-btn" @click="editUser(player)">Edit</button>
               <button class="delete-btn" @click="deleteSelf()">Delete</button>
             </td>
           </tr>
           <tr v-if="players.length === 0">
-            <td colspan="4">No players connected.</td>
+            <td colspan="4">No players found.</td>
           </tr>
         </tbody>
       </table>
@@ -47,8 +45,7 @@ export default {
   data() {
     return {
       players: [],
-      message: '',
-      websocket: null
+      message: ''
     };
   },
   methods: {
@@ -59,42 +56,16 @@ export default {
         return;
       }
       try {
-        const response = await fetch('/api/users', {
+        const response = await fetch('/api/api/users', {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        this.players = data;
+        console.log('Fetched data:', data);
+        this.players = Array.isArray(data) ? data : data.users || [];
       } catch (error) {
         console.error('Error loading user list:', error);
         this.message = 'Error loading user list.';
       }
-    },
-
-    connectPisSocket() {
-      const token = localStorage.getItem('authToken');
-      const websocketURL = `ws://116.203.97.62:8080/api/wsPis?token=${token}`;
-      this.websocket = new WebSocket(websocketURL);
-
-      this.websocket.onopen = () => console.log('Connected to WebSocketPis');
-      this.websocket.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          if (message.devices) {
-            this.players = message.devices.map(device => ({
-              username: device.username,
-              team: device.team || '-',
-              online: device.connected
-            }));
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocketPis data:', error);
-        }
-      };
-      this.websocket.onclose = () => {
-        console.log('WebSocketPis closed. Reconnecting in 5s...');
-        setTimeout(() => this.connectPisSocket(), 5000);
-      };
-      this.websocket.onerror = (error) => console.error('WebSocketPis error:', error);
     },
 
     editUser(player) {
@@ -111,7 +82,7 @@ export default {
       if (!confirm('Are you sure that you want to delete your account?')) return;
 
       try {
-        const response = await fetch('/api/user', {
+        const response = await fetch('/api/api/user', {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -127,14 +98,8 @@ export default {
       }
     }
   },
-
   mounted() {
     this.fetchUsers();
-    this.connectPisSocket();
-  },
-
-  beforeUnmount() {
-    if (this.websocket) this.websocket.close();
   }
 };
 </script>

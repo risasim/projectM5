@@ -15,7 +15,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(player, index) in players" :key="player.username">
+          <tr v-for="(player, index) in sortedPlayers" :key="player.username">
             <td>{{ index + 1 }}</td>
             <td>{{ player.username }}</td>
             <td>{{ player.deaths }}</td>
@@ -37,44 +37,51 @@ export default {
   data() {
     return {
       players: [],
-      ws: null
+      websocket: null
     };
+  },
+  computed: {
+    //ffa sorting
+    sortedPlayers() {
+      return this.players.slice().sort((a, b) => 
+        b.score - a.score || a.deaths - b.deaths
+      );
+    }
   },
   methods: {
     goBack() {
       this.$router.go(-1);
     },
     connectLeaderboard() {
-      // connect web socket
-      const wsUrl = `ws://116.203.97.62:8080/api/wsLeaderboard`;
-      this.ws = new WebSocket(wsUrl);
+      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard`;
+      this.websocket = new WebSocket(websocketURL);
 
-      this.ws.onopen = () => {
+      this.websocket.onopen = () => {
         console.log('Connected to leaderboard WebSocket (FFA)');
       };
 
-      this.ws.onmessage = (event) => {
+      this.websocket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
           if (message.game_type && message.game_type.toLowerCase() === 'freefall') {
-            if (message.players && Array.isArray(message.players)) {
-              this.players = message.players.map((p, i) => ({
-                username: p.username,
-                deaths: p.deaths || 0,
-                score: p.score || 0
+            if (Array.isArray(message.players)) {
+              this.players = message.players.map(player => ({
+                username: player.username,
+                deaths: player.deaths || 0,
+                score: player.score || 0
               }));
             }
           }
-        } catch (err) {
-          console.error('WebSocket parse error:', err);
+        } catch (error) {
+          console.error('WebSocket parse error:', error);
         }
       };
 
-      this.ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
+      this.websocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
       };
 
-      this.ws.onclose = () => {
+      this.websocket.onclose = () => {
         console.log('WebSocket closed. Reconnecting in 5 seconds...');
         setTimeout(() => this.connectLeaderboard(), 5000);
       };
@@ -84,7 +91,7 @@ export default {
     this.connectLeaderboard();
   },
   beforeUnmount() {
-    if (this.ws) this.ws.close();
+    if (this.websocket) this.websocket.close();
   }
 };
 </script>
