@@ -4,7 +4,9 @@
       <div class="adminboard-container">
         <div class="top-buttons">
           <div class="left-buttons">
-            <button class="adminboard-btn" @click="$router.push('/adminedit')"> Manage players </button>
+            <button class="adminboard-btn" @click="$router.push('/adminedit')">
+              Manage Players
+            </button>
           </div>
 
           <h1 class="adminboard-title">Game Session Settings</h1>
@@ -20,129 +22,218 @@
             v-model="gameMode"
             @change="handleGameModeChange"
           >
-            <option value="FreeFall">FreeFall</option>
+            <option value="Freefall">FreeFall</option>
             <option value="Infected">Infected</option>
-            <option value="Team Deathmatch">Team Deathmatch</option>
+            <option value="TeamDeathmatch">Team Deathmatch</option>
           </select>
         </div>
 
         <table class="player-table">
           <thead>
             <tr>
-              <th>Joined Players</th>
+              <th>Player</th>
               <th>Team</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Orbay</td>
-              <td>Blue</td>
+            <tr v-for="player in players" :key="player.username">
+              <td>{{ player.username }}</td>
+              <td>{{ player.team || '-' }}</td>
+              <td :class="player.online ? 'alive' : 'dead'">{{ player.online ? 'Online' : 'Offline' }}</td>
             </tr>
-            <tr>
-              <td>Berk</td>
-              <td>Red</td>
+            <tr v-if="players.length === 0">
+              <td colspan="3">No players connected yet.</td>
             </tr>
           </tbody>
         </table>
 
         <div class="session-buttons">
-          <button class="start-session" @click="startGameSession">Start session</button>
-          <button class="end-session" @click="endGameSession">End session</button>
+          <button class="start-session" @click="createGame">Create Game</button>
+          <button class="start-session" @click="startGameSession">Start Game</button>
+          <button class="end-session" @click="endGameSession">Stop Game</button>
         </div>
 
-      <div class="gametype-select">
-        <label for="gametype">Choose gametype:</label>
-        <select id="gametype" class="adminboard-select">
-          <option value="v">FreeFall</option>
-          <option value="t">Infected</option>
-          <option value="t">Team Deathmatch</option>
-
-        </select>
-        <select
-          id="gametype"
-          class="adminboard-select"
-          v-model="gameMode"
-          @change="handleGameModeChange"
-        >
-          <option value="FreeFall">FreeFall</option>
-          <option value="Infected">Infected</option>
-          <option value="Team Deathmatch">Team Deathmatch</option>
-        </select>
-      </div>
-
-      <table class="player-table">
-        <thead>
-          <tr>
-            <th>Players</th>
-            <th>Team</th>
-            <th>Hits</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Orbay</td>
-            <td>Blue</td>
-            <td>31</td>
-            <td class="alive">Alive</td>
-          </tr>
-          <tr>
-            <td>Berk</td>
-            <td>Red</td>
-            <td>25</td>
-            <td class="dead">Dead</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="session-buttons">
-        <button class="start-session" @click="startGameSession">Start session</button>
-        <button class="end-session" @click="endGameSession">End session</button>
-      </div>
-        <div v-if="message" class="message-box">
-          {{ message }}
-        </div>
-
+        <div v-if="message" class="message-box">{{ message }}</div>
       </div>
     </div>
-  </div>  
+  </div>
 </template>
 
 <script>
-  export default {
-    name: 'AdminBoard',
-    data(){
-      return{
-      message: "",
-      gameMode: 'FreeFall'
+export default {
+  name: 'AdminBoard',
+  data() {
+    return {
+      message: '',
+      gameMode: 'Freefall',
+      players: [],
+      websocket: null,
+      gameStatus: 'Idle',
+      statusInterval: null
+    };
+  },
+  methods: {
+    getToken() {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('You must log in first.');
+        return null;
+      }
+      return token;
+    },
+
+    async createGame() {
+      const token = this.getToken();
+      if (!token) return;
+      try {
+        const response = await fetch('/api/createGame', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ game_type: this.gameMode })
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          this.message = data.message || 'Game created successfully';
+          alert(this.message);
+        } else {
+          this.message = data.error || 'Failed to create game';
+          alert(this.message);
+        }
+      } catch (error) {
+        console.error('Create game error:', error);
+        this.message = 'Network error while creating game.';
       }
     },
 
-    methods: {
-      startGameSession(){
-        this.message = 'Session has started.'
-        alert('Session has started.')
-      },
-      endGameSession(){
-        this.message = 'Session has ended.'
-        alert('Session has ended.')
-      },
-      handleGameModeChange(event) {
-        const mode = event.target.value;
-        this.message = `Game mode changed to ${mode}`
-        alert(`Game mode has changed to ${mode}`)
-      },
-      goToLeaderboard() {
-        if (this.gameMode === 'FreeFall') {
-          this.$router.push('/leaderboard-ffa');
-        } else if (this.gameMode === 'Infected') {
-          this.$router.push('/leaderboard-inf');
-        } else if (this.gameMode === 'Team Deathmatch') {
-          this.$router.push('/leaderboard-tdm');
+    async startGameSession() {
+      const token = this.getToken();
+      if (!token) return;
+      try {
+        const response = await fetch('/api/startGame', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          this.message = data.message || 'Game started successfully';
+          alert(this.message);
+          this.connectPisSocket();
+        } else {
+          this.message = data.error || 'Failed to start game';
+          alert(this.message);
         }
-      } 
+      } catch (error) {
+        console.error('Start game error:', error);
+        this.message = 'Network error while starting game.';
+      }
+    },
+
+    async endGameSession() {
+      const token = this.getToken();
+      if (!token) return;
+      try {
+        const response = await fetch('/api/stopGame', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          this.message = data.message || 'Game stopped successfully';
+          alert(this.message);
+          this.disconnectPisSocket();
+        } else {
+          this.message = data.error || 'Failed to stop game';
+          alert(this.message);
+        }
+      } catch (error) {
+        console.error('Stop game error:', error);
+        this.message = 'Network error while stopping game.';
+      }
+    },
+
+    async pollGameStatus() {
+      const token = this.getToken();
+      if (!token) return;
+      try {
+        const response = await fetch('/api/api/gameStatus', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.Game_Status) {
+          this.gameStatus = data.Game_Status;
+          this.message = `Game status: ${data.Game_Status}`;
+        }
+      } catch (error) {
+        console.error('Status poll error:', error);
+      }
+    },
+
+    connectPisSocket() {
+      if (this.websocket) this.websocket.close();
+      const websocketURL = 'ws://116.203.97.62:8080/api/wsPis';
+      this.websocket = new WebSocket(websocketURL);
+      this.websocket.onopen = () => console.log('Connected to Pi WebSocket');
+      this.websocket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.devices) {
+            this.players = message.devices.map(device => ({
+              username: device.username,
+              team: device.team || '-',
+              online: device.connected
+            }));
+          }
+        } catch (error) {
+          console.error('WebSocket parse error:', error);
+        }
+      };
+      this.websocket.onerror = (error) => console.error('WebSocket error:', error);
+      this.websocket.onclose = () => {
+        console.log('WebSocket closed, retrying in 5s...');
+        setTimeout(() => {
+          if (this.gameStatus === 'Started') this.connectPisSocket();
+        }, 5000);
+      };
+    },
+
+    disconnectPisSocket() {
+      if (this.websocket) {
+        this.websocket.close();
+        this.websocket = null;
+      }
+      this.players = [];
+    },
+
+    handleGameModeChange(event) {
+      this.gameMode = event.target.value;
+      this.message = `Game mode changed to ${this.gameMode}`;
+      alert(`Game mode changed to ${this.gameMode}`);
+    },
+
+    goToLeaderboard() {
+      const map = {
+        Freefall: '/leaderboard-ffa',
+        Infected: '/leaderboard-inf',
+        TeamDeathmatch: '/leaderboard-tdm'
+      };
+      this.$router.push(map[this.gameMode]);
     }
-  };
+  },
+
+  mounted() {
+    this.pollGameStatus();
+    this.statusInterval = setInterval(this.pollGameStatus, 3000);
+  },
+
+  beforeUnmount() {
+    clearInterval(this.statusInterval);
+    this.disconnectPisSocket();
+  }
+};
 </script>
 
 <style>
@@ -157,7 +248,6 @@
   justify-content: center;
   align-items: center;
 }
-
 </style>
 
 <style scoped>
@@ -431,5 +521,4 @@
     font-size: 3.8vw;
   }
 }
-
 </style>
