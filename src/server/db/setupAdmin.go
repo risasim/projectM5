@@ -52,6 +52,22 @@ func SeedUsers(db *sql.DB) {
 			piSN:       "ae616eb0e54290a6",
 			apiKey:     "123e4567-e89b-12d3-a456-426614174000",
 		},
+		{
+			username:   "orbay",
+			password:   "wachtword",
+			isAdmin:    false,
+			deathSound: DefaultDeathSound,
+			piSN:       "ae616eb0e54290a69",
+			apiKey:     "123e4567-e89b-12d3-a416-426614174000",
+		},
+		{
+			username:   "Chris Kyle",
+			password:   "sniper",
+			isAdmin:    false,
+			deathSound: DefaultDeathSound,
+			piSN:       "ae616eb0e54290a70",
+			apiKey:     "123e4567-e89b-12d3-a426-426614174000",
+		},
 	}
 
 	for _, u := range users {
