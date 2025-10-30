@@ -85,7 +85,12 @@ func (gm *GameManager) StartGame() error {
 	if err != nil {
 		return fmt.Errorf("json messud up innit")
 	}
-	gm.BroadcastPis <- jsonData
+	message := communication.Message{MsgType: communication.Start, Data: jsonData}
+	jsonData2, err2 := json.Marshal(message)
+	if err2 != nil {
+		return fmt.Errorf("json messud up innit")
+	}
+	gm.BroadcastPis <- jsonData2
 	return nil
 }
 
@@ -98,9 +103,14 @@ func (gm *GameManager) EndGame() error {
 	endMessage := communication.EndedMessage{At: time.Now()}
 	jsonData, err := json.Marshal(endMessage)
 	if err != nil {
-		return fmt.Errorf("json fuckup")
+		return fmt.Errorf("json messud up innit")
 	}
-	gm.BroadcastPis <- jsonData
+	message := communication.Message{MsgType: communication.Start, Data: jsonData}
+	jsonData2, err2 := json.Marshal(message)
+	if err2 != nil {
+		return fmt.Errorf("json messud up innit")
+	}
+	gm.BroadcastPis <- jsonData2
 	fmt.Println("Game ended")
 	return nil
 }
@@ -323,13 +333,19 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 		// Process the hit
 		res := gm.Game.registerHit(hitData)
 
-		responseJSON, err := json.Marshal(res)
-		if err != nil {
-			fmt.Println("Error marshalling response:", err)
+		responseJSON, err1 := json.Marshal(res)
+		if err1 != nil {
+			fmt.Println("Error marshalling response:", err1)
+			continue
+		}
+		message1 := communication.Message{MsgType: communication.HitResponseMsg, Data: responseJSON}
+		jsonData2, err2 := json.Marshal(message1)
+		if err2 != nil {
+			fmt.Println("Error marshalling response:", err2)
 			continue
 		}
 
-		if err := conn.WriteMessage(websocket.TextMessage, responseJSON); err != nil {
+		if err := conn.WriteMessage(websocket.TextMessage, jsonData2); err != nil {
 			fmt.Println("Error writing message:", err)
 			break
 		}
