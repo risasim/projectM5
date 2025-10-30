@@ -2,23 +2,32 @@
   <div class="userlist-page">
     <div class="userlist-container">
       <div class="top-section">
-        <h1 class="userlist-title">Users List</h1>
+        <h1 class="userlist-title">Connected Players</h1>
       </div>
 
       <table class="userlist-table">
         <thead>
           <tr>
             <th>Username</th>
+            <th>Team</th>
+            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="user in users" :key="user.id">
-            <td>{{ user.name }}</td>
-            <td>
-              <button class="edit-btn" @click="editUser(user)">Edit</button>
-              <button class="delete-btn" @click="deleteUser(user)">Delete</button>
+          <tr v-for="player in players" :key="player.username">
+            <td>{{ player.username }}</td>
+            <td>{{ player.team || '-' }}</td>
+            <td :class="player.online ? 'alive' : 'dead'">
+              {{ player.online ? 'Online' : 'Offline' }}
             </td>
+            <td>
+              <button class="edit-btn" @click="editUser(player)">Edit</button>
+              <button class="delete-btn" @click="deleteSelf()">Delete</button>
+            </td>
+          </tr>
+          <tr v-if="players.length === 0">
+            <td colspan="4">No players connected.</td>
           </tr>
         </tbody>
       </table>
@@ -26,35 +35,108 @@
       <router-link to="/adminboard">
         <button class="back-btn">Back to Adminboard</button>
       </router-link>
+
+      <div v-if="message" class="message-box">{{ message }}</div>
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'UsersList',
+  name: 'AdminEdit',
   data() {
     return {
-      users: [
-        { id: 1, name: 'Orbay' },
-        { id: 2, name: 'Berk' },
-        { id: 3, name: 'Richard' },
-        { id: 4, name: 'Marciano' },
-        { id: 5, name: 'Muhammed' },
-        { id: 6, name: 'Peter' }
-      ]
-    }
+      players: [],
+      message: '',
+      websocket: null
+    };
   },
   methods: {
-    editUser(user) {
-      alert(`Editing ${user.name}`)
+    async fetchUsers() {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('You must log in first.');
+        return;
+      }
+      try {
+        const response = await fetch('/api/users', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        this.players = data;
+      } catch (error) {
+        console.error('Error loading user list:', error);
+        this.message = 'Error loading user list.';
+      }
+    },
+
+    connectPisSocket() {
+      const token = localStorage.getItem('authToken');
+      const websocketURL = `ws://116.203.97.62:8080/api/wsPis?token=${token}`;
+      this.websocket = new WebSocket(websocketURL);
+
+      this.websocket.onopen = () => console.log('Connected to WebSocketPis');
+      this.websocket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.devices) {
+            this.players = message.devices.map(device => ({
+              username: device.username,
+              team: device.team || '-',
+              online: device.connected
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocketPis data:', error);
+        }
+      };
+      this.websocket.onclose = () => {
+        console.log('WebSocketPis closed. Reconnecting in 5s...');
+        setTimeout(() => this.connectPisSocket(), 5000);
+      };
+      this.websocket.onerror = (error) => console.error('WebSocketPis error:', error);
+    },
+
+    editUser(player) {
+      alert(`Editing ${player.username}`);
       this.$router.push('/userboard');
     },
-    deleteUser(user) {
-      alert(`Deleting ${user.name}`)
+
+    async deleteSelf() {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('You must log in first.');
+        return;
+      }
+      if (!confirm('Are you sure that you want to delete your account?')) return;
+
+      try {
+        const response = await fetch('/api/user', {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          this.message = data.message || 'Account deleted.';
+        } else {
+          this.message = data.error || 'Failed to delete account.';
+        }
+      } catch (error) {
+        console.error('Delete failed:', error);
+        this.message = 'Network error while deleting account.';
+      }
     }
+  },
+
+  mounted() {
+    this.fetchUsers();
+    this.connectPisSocket();
+  },
+
+  beforeUnmount() {
+    if (this.websocket) this.websocket.close();
   }
-}
+};
 </script>
 
 <style scoped>
