@@ -128,10 +128,10 @@ func (a *App) InitDatabase() {
 
 func (a *App) CreateRoutes() {
 	routes := gin.Default()
-	routes.POST("/auth", a.loginHandler.Login)
+	routes.POST("/api/auth", a.loginHandler.Login)
 	userController := db.NewUserController(a.DB)
 	endPointHandler := state.NewEndPointHandler(a.UserRepo, a.GameManager)
-	routes.POST("/piAuth", a.loginHandler.PiLogin)
+	routes.POST("/api/piAuth", a.loginHandler.PiLogin)
 
 	protected := routes.Group("/api")
 	protected.Use(a.loginHandler.AuthenticationMiddleware)
@@ -157,6 +157,20 @@ func (a *App) CreateRoutes() {
 
 	protected.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
 	protected.GET("/wsPis", a.GameManager.WsPisHandler)
+
+	distPath := "./web"
+	routes.Static("/assets", distPath+"/assets")
+	routes.StaticFile("/favicon.ico", distPath+"/favicon.ico")
+
+	// NoRoute for non-API routes only
+	routes.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if len(path) >= 4 && path[:4] == "/api" {
+			c.JSON(404, gin.H{"error": "API endpoint not found"})
+		} else {
+			c.File(distPath + "/index.html")
+		}
+	})
 
 	a.Routes = routes
 }
