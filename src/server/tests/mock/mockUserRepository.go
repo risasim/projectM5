@@ -2,16 +2,39 @@ package mock
 
 import (
 	"database/sql"
+	"sync"
+
 	"github.com/risasim/projectM5/project/src/server/db"
 	"github.com/risasim/projectM5/project/src/server/db/model"
-	"sync"
 )
 
 // MockUserRepository is a mock of user repository used for testing
 type MockUserRepository struct {
-	mu     sync.Mutex
-	users  map[string]model.GetUserAuth
-	autoid uint
+	mu        sync.Mutex
+	users     map[string]model.GetUserAuth
+	usersByPi map[string]*model.GetUserAuth
+	autoid    uint
+}
+
+func (m *MockUserRepository) UpdateDeathSound(username string, path string) error {
+	user := m.users[username]
+	user.DeathSound = path
+	return nil
+}
+
+func (m *MockUserRepository) DeleteUser(username string) error {
+	delete(m.users, username)
+	return nil
+}
+
+func (m *MockUserRepository) GetPiUser(piSN string) (*model.GetUserAuth, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if u, exists := m.usersByPi[piSN]; exists {
+		return u, nil
+	}
+	return nil, nil
 }
 
 // SelectUsers does mock the real
@@ -44,11 +67,14 @@ func (m MockUserRepository) InsertUser(user model.PostUser, apiKey string, isAdm
 		IsAdmin:    isAdmin,
 		Username:   user.Username,
 		Password:   user.Password,
-		DeathSound: sqlNullString(user.DeathSound),
-		PiSN:       sqlNullString(user.PiSN),
+		DeathSound: user.DeathSound,
+		PiSN:       user.PiSN,
 		ApiKey:     sqlNullString(apiKey),
 	}
 	m.users[user.Username] = newUser
+
+	m.usersByPi[newUser.PiSN] = &newUser
+
 	m.autoid++
 	return true
 }
@@ -66,8 +92,9 @@ func (m *MockUserRepository) GetUser(username string) (*model.GetUserAuth, error
 
 func NewMockUserRepository() db.UserRepositoryInterface {
 	return &MockUserRepository{
-		users:  make(map[string]model.GetUserAuth),
-		autoid: 1,
+		users:     make(map[string]model.GetUserAuth),
+		usersByPi: make(map[string]*model.GetUserAuth),
+		autoid:    1,
 	}
 }
 

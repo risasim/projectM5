@@ -3,18 +3,18 @@ package app
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/gorilla/websocket"
 	_ "github.com/lib/pq"
 	"github.com/risasim/projectM5/project/src/server/auth"
 	"github.com/risasim/projectM5/project/src/server/db"
 	"github.com/risasim/projectM5/project/src/server/state"
-	"log"
-	"os"
-	"time"
 )
 
 // config does load all the configuration details from the .env file
@@ -54,7 +54,6 @@ type App struct {
 	UserRepo     db.UserRepositoryInterface
 	Routes       *gin.Engine
 	GameManager  *state.GameManager
-	upgrader     websocket.Upgrader
 	loginHandler *auth.LoginHandler
 }
 
@@ -124,37 +123,42 @@ func (a *App) Migrate() {
 func (a *App) InitDatabase() {
 	a.CreateConnection()
 	a.Migrate()
-	db.SeedAdmin(a.DB)
+	db.SeedUsers(a.DB)
 }
 
 func (a *App) CreateRoutes() {
 	routes := gin.Default()
 	routes.POST("/auth", a.loginHandler.Login)
 	userController := db.NewUserController(a.DB)
+	endPointHandler := state.NewEndPointHandler(a.UserRepo, a.GameManager)
+	routes.POST("/piAuth", a.loginHandler.PiLogin)
 
 	protected := routes.Group("/api")
 	protected.Use(a.loginHandler.AuthenticationMiddleware)
 
-	protected.GET("/users", userController.GetUsers)
-	protected.POST("/addUser", userController.InsertUser)
-	//For web
-	//protected.POST("/music")
-	//protected.GET("/gameStatus")
-	//protected.POST("/startGame")
-	//Ending the game ?
-	//protected.POST("/gameStatus")
-	//protected.DELETE("/user")
-	//protected.POSt("joinGame")
-	// For pi
-	//protected.GET("/music")
+	adminProtected := routes.Group("/api")
+	adminProtected.Use(a.loginHandler.AuthenticationMiddleware)
+	adminProtected.Use(auth.CheckAdmin)
 
-	//routes.GET("/wsLeaderboard")
-	//routes.GET("/wsPis")
+	protected.GET("/users", userController.GetUsers)
+	adminProtected.POST("/addUser", userController.InsertUser)
+	//For web
+	protected.POST("/uploadSound", endPointHandler.UploadSound)
+	protected.GET("/sound", endPointHandler.GetSound)
+	protected.GET("/gameStatus", endPointHandler.GetGameStatus)
+	//For admin - add the middleware for checking
+	adminProtected.POST("/createGame", endPointHandler.CreateGame)
+	adminProtected.POST("/startGame", endPointHandler.StartGame)
+	adminProtected.POST("/stopGame", endPointHandler.StopGame)
+	adminProtected.DELETE("/user", endPointHandler.DeleteUser)
+
+	protected.POST("/joinGame", endPointHandler.JoinGame)
+	// For pi
+
+	protected.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
+	protected.GET("/wsPis", a.GameManager.WsPisHandler)
+
 	a.Routes = routes
-	a.upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
 }
 
 func (a *App) Run(gm *state.GameManager) {

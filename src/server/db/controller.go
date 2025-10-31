@@ -23,11 +23,14 @@ func (u UserController) InsertUser(g *gin.Context) {
 	if err := g.ShouldBindJSON(&user); err == nil {
 		hash, _ := HashPassword(user.Password)
 		user.Password = hash
+		if user.DeathSound == "" {
+			user.DeathSound = "default.mp3"
+		}
 		usersRepo := NewUsersRepository(db)
 		apiKey := uuid.New().String()
 		insert := usersRepo.InsertUser(user, apiKey, false)
 		if insert {
-			g.JSON(200, gin.H{"status": "sucess", "msg": "Inserted new User"})
+			g.JSON(200, gin.H{"status": "success", "msg": "Inserted new User"})
 		} else {
 			g.JSON(500, gin.H{"status": "fail", "msg": "Something went wrong"})
 		}
@@ -44,7 +47,7 @@ func (u UserController) GetUsers(g *gin.Context) {
 	if getUsers != nil {
 		g.JSON(200, gin.H{"status": "success", "data": getUsers, "msg": "Sending users"})
 	} else {
-		g.JSON(500, gin.H{"status": "failure", "data": nil, "msg": "Someting went wrong in the db"})
+		g.JSON(500, gin.H{"status": "failure", "data": nil, "msg": "Something went wrong in the db"})
 	}
 }
 

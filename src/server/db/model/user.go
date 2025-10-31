@@ -23,11 +23,11 @@ type GetUserAuth struct {
 	// Password of the user
 	Password string
 	// DeathSound is the link to the file with the death sound
-	DeathSound sql.NullString
+	DeathSound string
 	// ApiKey generated for the user
 	ApiKey sql.NullString
 	// PiSN is the serial number of Pi
-	PiSN sql.NullString
+	PiSN string
 }
 
 // PostUser is a struct for the create request adding new user

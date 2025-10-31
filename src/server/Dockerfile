@@ -21,6 +21,10 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 # Copy migration files to the container
 COPY --from=builder /app/db/migrations ./db/migrations
+# Copy soundEffects directory if it exists
+COPY --from=builder /app/soundEffects ./soundEffects
+# Create soundEffects directory if it doesn't exist (for runtime file uploads)
+RUN mkdir -p ./soundEffects
 
 # Expose the application port
 EXPOSE 8080

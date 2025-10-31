@@ -17,7 +17,7 @@ type LeaderboardMessage struct {
 // FreefallLeaderboard is leaderboard sent to
 type FreefallLeaderboard struct {
 	// deadPlayers are the players that has been killed
-	deadPlayers []LeaderboardPlayer
+	DeadPlayers []LeaderboardPlayer
 }
 
 // TeamDeathMatchLeaderboard is for deathmatch passing to json
@@ -45,8 +45,9 @@ type LeaderboardPlayer struct {
 // GameType is pretty much GameMode but only for decoding
 type GameType uint
 
+// Changed something here, need to check later if that is fine, also futher from MsgType to GameType
 const (
-	Freefall MsgType = iota
+	Freefall GameType = iota
 	TeamDeathmatch
 	Infected
 )
@@ -60,13 +61,13 @@ var (
 	GameType_value = map[string]uint{
 		"Freefall":       0,
 		"TeamDeathmatch": 1,
-		"Infected":       3,
+		"Infected":       2,
 	}
 )
 
 func ParseGameType(gmt string) (GameType, error) {
-	gmt = strings.TrimSpace(strings.ToLower(gmt))
-	value, ok := MsgType_value[gmt]
+	gmt = strings.TrimSpace(gmt)
+	value, ok := GameType_value[gmt]
 	if !ok {
 		return GameType(0), fmt.Errorf("invalid msg type: %s", gmt)
 	}
@@ -74,7 +75,7 @@ func ParseGameType(gmt string) (GameType, error) {
 }
 
 func (gmt GameType) String() string {
-	return MsgType_String[uint(gmt)]
+	return GameType_String[uint(gmt)]
 }
 
 // MarshalJSON is encoding to JSON

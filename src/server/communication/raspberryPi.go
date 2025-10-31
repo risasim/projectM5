@@ -35,12 +35,16 @@ type HitResponse struct {
 
 // HitData does store data passed from the pi about a hit
 type HitData struct {
-	// victim is the id of the Player who is sending the data about being shot
-	Victim int `json:"victim"`
-	// shooter is the id of the Player who has sent the IR signal and hit the receiver
-	Shooter int `json:"shooter"`
+	// victim is the serial number of Pi of the Player who is sending the data about being shot
+	Victim string `json:"victim"`
 	// timeStamp of the shot being registered
 	TimeStamp time.Time `json:"timestamp"`
+}
+
+// SetSoundMessage has the Base64 encoded sound data
+type SetSoundMessage struct {
+	SoundName string `json:"soundName"`
+	Base64    string `json:"base64"`
 }
 
 // Message is the actual type that will be decoded into
@@ -58,6 +62,7 @@ const (
 	HitDataMsg
 	HitResponseMsg
 	End
+	SetSound
 )
 
 var (
