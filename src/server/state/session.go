@@ -58,6 +58,7 @@ func (ffl *FreeForAll) registerHit(dt communication.HitData) communication.HitRe
 			}
 		}
 	}
+	println("Victim not found")
 	return communication.HitResponse{}
 }
 
@@ -125,6 +126,7 @@ func (tdm *TeamDeathMatch) registerHit(dt communication.HitData) communication.H
 			}
 		}
 	}
+	println("Victim not found")
 	return communication.HitResponse{}
 }
 
