@@ -25,6 +25,8 @@ COPY --from=builder /app/db/migrations ./db/migrations
 COPY --from=builder /app/soundEffects ./soundEffects
 # Create soundEffects directory if it doesn't exist (for runtime file uploads)
 RUN mkdir -p ./soundEffects
+# Copy already built frontend
+COPY --from=builder /app/web ./web
 
 # Expose the application port
 EXPOSE 8080
