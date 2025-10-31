@@ -9,19 +9,19 @@
         <thead>
           <tr>
             <th>Username</th>
-            <th>Team</th>
-            <th>Status</th>
+            <th>Pi Serial</th>
+            <th>Death Sound</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="player in players" :key="player.username">
+          <tr v-for="player in players" :key="player.id || player.username">
             <td>{{ player.username }}</td>
-            <td>{{ player.team || '-' }}</td>
-            <td class="alive">Online</td>
+            <td>{{ player.pi_sn || '-' }}</td>
+            <td>{{ player.death_sound || 'None' }}</td>
             <td>
               <button class="edit-btn" @click="editUser(player)">Edit</button>
-              <button class="delete-btn" @click="deleteSelf()">Delete</button>
+              <button class="delete-btn" @click="deleteUser(player)">Delete</button>
             </td>
           </tr>
           <tr v-if="players.length === 0">
@@ -55,13 +55,19 @@ export default {
         alert('You must log in first.');
         return;
       }
+
       try {
         const response = await fetch('/api/api/users', {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch users: ${response.status}`);
+        }
+
         const data = await response.json();
-        console.log('Fetched data:', data);
-        this.players = Array.isArray(data) ? data : data.users || [];
+        console.log('Fetched user list:', data);
+
+        this.players = Array.isArray(data) ? data : [];
       } catch (error) {
         console.error('Error loading user list:', error);
         this.message = 'Error loading user list.';
@@ -73,28 +79,31 @@ export default {
       this.$router.push('/userboard');
     },
 
-    async deleteSelf() {
+    async deleteUser(player) {
       const token = localStorage.getItem('authToken');
       if (!token) {
         alert('You must log in first.');
         return;
       }
-      if (!confirm('Are you sure that you want to delete your account?')) return;
+
+      if (!confirm(`Are you sure you want to delete ${player.username}?`)) return;
 
       try {
         const response = await fetch('/api/api/user', {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
         });
+
         const data = await response.json();
-        if (data.status === 'success') {
-          this.message = data.message || 'Account deleted.';
+        if (response.ok && data.status === 'success') {
+          alert(`Deleted ${player.username} successfully.`);
+          this.fetchUsers();
         } else {
-          this.message = data.error || 'Failed to delete account.';
+          alert(data.error || 'Failed to delete user.');
         }
       } catch (error) {
         console.error('Delete failed:', error);
-        this.message = 'Network error while deleting account.';
+        alert('Network error while deleting user.');
       }
     }
   },

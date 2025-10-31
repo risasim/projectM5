@@ -74,8 +74,8 @@ export default {
     return {
       message: '',
       gameMode: 'Freefall',
-      players: [], 
-      isGameActive: false // locks the dropdown when the game is active
+      players: [],
+      isGameActive: false
     };
   },
   methods: {
@@ -89,98 +89,104 @@ export default {
       return token;
     },
 
-    // handling the game mode change
     onGameModeChange() {
       if (this.isGameActive) return;
       this.message = `Game mode changed to ${this.gameMode}`;
       console.log(`Selected game mode: ${this.gameMode}`);
     },
 
-    // create game session
     async createGame() {
+      console.log("createGame() called");
       const token = this.getAuthToken();
-      if (!token) return;
+      if (!token) {
+        console.log("No token found, aborting.");
+        return;
+      }
+
+      console.log("Selected mode:", this.gameMode);
 
       try {
-        const response = await fetch('/api/api/createGame', {
+        const res = await fetch('/api/api/createGame', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ game_type: this.gameMode })
+          body: JSON.stringify({ game_type: this.gameMode })  
         });
 
-        const data = await response.json();
+        console.log("Response status:", res.status);
+        const text = await res.text();
+        console.log("Raw response:", text);
 
-        if (response.ok && data.status === 'success') {
+        let data;
+        try { data = JSON.parse(text); } catch { data = { error: text }; }
+
+        if (res.ok && data.status === 'success') {
           this.message = data.message || `New ${this.gameMode} game created`;
-          this.isGameActive = true; // lock dropdown
-          console.log(`Game session created successfully with type: ${this.gameMode}`);
+          this.isGameActive = true;
+          console.log("Game created successfully!");
         } else {
           this.message = data.error || 'Failed to create game.';
-          console.warn('Create game response:', data);
+          console.warn("Backend said:", data);
         }
       } catch (err) {
-        console.error('Create game error:', err);
+        console.error("Exception during fetch:", err);
         this.message = 'Network or server error while creating game.';
       }
     },
 
-    // start game
     async startGame() {
       const token = this.getAuthToken();
       if (!token) return;
 
       try {
-        const response = await fetch('/api/api/startGame', {
+        console.log("Starting game...");
+        const res = await fetch('/api/api/startGame', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        const data = await res.json();
 
-        const data = await response.json();
-
-        if (response.ok && data.status === 'success') {
+        if (res.ok && data.status === 'success') {
           this.message = data.message || 'Game started successfully.';
-          console.log('Game started.');
+          console.log("Game started:", data);
         } else {
           this.message = data.error || 'Failed to start game.';
-          console.warn('Start game response:', data);
+          console.warn("Start game response:", data);
         }
       } catch (err) {
-        console.error('Start game error:', err);
+        console.error("Network or server error while starting game:", err);
         this.message = 'Network or server error while starting game.';
       }
     },
 
-    // stop game
     async stopGame() {
       const token = this.getAuthToken();
       if (!token) return;
 
       try {
-        const response = await fetch('/api/api/stopGame', {
+        console.log("Stopping game...");
+        const res = await fetch('/api/api/stopGame', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        const data = await res.json();
 
-        const data = await response.json();
-
-        if (response.ok && data.status === 'success') {
+        if (res.ok && data.status === 'success') {
           this.message = data.message || 'Game stopped successfully.';
-          this.isGameActive = false; // unlock dropdown
-          console.log('Game stopped, mode selector unlocked.');
+          this.isGameActive = false;
+          console.log("Game stopped, dropdown unlocked.");
         } else {
           this.message = data.error || 'Failed to stop game.';
-          console.warn('Stop game response:', data);
+          console.warn("Stop game response:", data);
         }
       } catch (err) {
-        console.error('Stop game error:', err);
+        console.error("Network or server error while stopping game:", err);
         this.message = 'Network or server error while stopping game.';
       }
     },
 
-    // navigate to the leaderboard based on game type
     goToLeaderboard() {
       const routes = {
         Freefall: '/leaderboard-ffa',
