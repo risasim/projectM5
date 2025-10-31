@@ -81,6 +81,9 @@ func (gm *GameManager) StartGame() error {
 	gm.GameStatus = Started
 	gm.Game.startGame(gm.CurrentSession)
 	startMessage := communication.StartedMessage{At: time.Now(), Active: true}
+	if gm.CurrentSession.GameType == communication.Infected {
+		startMessage = communication.StartedMessage{At: time.Now(), Active: false}
+	}
 	jsonData, err := json.Marshal(startMessage)
 	if err != nil {
 		return fmt.Errorf("json messud up innit")
@@ -105,7 +108,7 @@ func (gm *GameManager) EndGame() error {
 	if err != nil {
 		return fmt.Errorf("json messud up innit")
 	}
-	message := communication.Message{MsgType: communication.Start, Data: jsonData}
+	message := communication.Message{MsgType: communication.End, Data: jsonData}
 	jsonData2, err2 := json.Marshal(message)
 	if err2 != nil {
 		return fmt.Errorf("json messud up innit")
@@ -259,7 +262,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 	// Set read deadline and pong handler for keepalive
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
-		fmt.Println("Received pong from client")
+		//fmt.Println("Received pong from client")
 		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
@@ -281,7 +284,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 					fmt.Println("Error sending ping:", err)
 					return
 				}
-				fmt.Println("Sent ping to client")
+				//fmt.Println("Sent ping to client")
 			case <-done:
 				fmt.Println("Stopping Pi ping sender")
 				return
@@ -306,7 +309,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 		var genericMsg GenericMessage
 		if err := json.Unmarshal(message, &genericMsg); err == nil {
 			if genericMsg.Type == "ping" {
-				fmt.Println("Received keepalive ping from client")
+				//fmt.Println("Received keepalive ping from client")
 				// Reset read deadline on ping
 				conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 				continue // Skip processing pings as hit data
