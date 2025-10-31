@@ -56,6 +56,7 @@ export default {
             password: pass.value
           })
         });
+        console.log("Res is: ",response)
 
         if (!response.ok) {
           let msg = `${response.status} ${response.statusText}`

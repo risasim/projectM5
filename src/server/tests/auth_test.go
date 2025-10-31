@@ -29,7 +29,7 @@ func TestAuthLogin_Success(t *testing.T) {
 		Password: "secret123",
 	})
 
-	req, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -47,7 +47,7 @@ func TestAuthLogin_InvalidCredentials(t *testing.T) {
 		Password: "wrongpassword",
 	})
 
-	req, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -64,7 +64,7 @@ func TestPiAuth_ValidCredentials(t *testing.T) {
 		ApiKey: "kazoo",
 	})
 
-	req, _ := http.NewRequest(http.MethodPost, "/piAuth", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/piAuth", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -82,7 +82,7 @@ func TestAuthLogin_MissingApiKey(t *testing.T) {
 		ApiKey: "", // missing
 	})
 
-	req, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -99,7 +99,7 @@ func TestAuthLogin_MissingSnKey(t *testing.T) {
 		ApiKey: "kazoo",
 	})
 
-	req, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -116,7 +116,7 @@ func TestAuthLogin_NonExistantPiSN(t *testing.T) {
 		ApiKey: "kazoo",
 	})
 
-	req, _ := http.NewRequest(http.MethodPost, "/auth", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/auth", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()

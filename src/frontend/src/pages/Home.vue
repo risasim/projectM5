@@ -95,7 +95,6 @@ export default {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: url('@/assets/red-bg.png') center/cover no-repeat;
   color: #111;
   overflow-x: hidden;
 }
