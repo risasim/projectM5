@@ -26,7 +26,6 @@
           <p>Total Deaths: <span class="value">{{ deaths }}</span></p>
         </div>
 
-        <!-- SFX section -->
         <div class="sfx-section">
           <label for="deathSfx" class="sfx-label">Custom Death SFX:</label>
 
@@ -62,10 +61,8 @@
 
         <div class="session-status">
           <p>
-            <!-- 
             Session status:
             <span :class="['status', sessionStatus]">{{ sessionStatusText }}</span>
-            doesnt work god damn it -->
           </p>
 
           <p style="margin-top:0.5rem;">
@@ -98,31 +95,47 @@ export default {
       team: 'Unknown',
       victories: 0,
       deaths: 0,
-      sessionStatus: 'waiting',
+      serverGameStatus: 'Idle', 
+      isUserJoined: false, 
+      gameStatusPolling: null, 
       selectedFile: null,
       previewUrl: null,
       audioObjectUrl: null,
-      hasSound: false,   
+      hasSound: false, 	
       uploading: false,
       playing: false
     };
   },
 
   computed: {
+    joined() {
+        return this.isUserJoined; 
+    },
+    sessionStatus() {
+      if (this.serverGameStatus === 'Started') return 'active';
+      if (this.serverGameStatus === 'Created') return 'waiting';
+      return 'inactive'; 
+    },
     sessionStatusText() {
-      if (this.sessionStatus === 'active') return 'Game is currently running... Wait for it to finish before joining.';
-      if (this.sessionStatus === 'waiting') return 'Waiting for players, Join!';
-      if (this.sessionStatus === 'inactive') return 'Server currently inactive';
-      return 'Inactive';
+      if (this.serverGameStatus === 'Started') return 'Game is currently running... Wait for it to finish before joining.';
+      if (this.serverGameStatus === 'Created') return 'Waiting for players, Join!';
+      if (this.serverGameStatus === 'Idle') return 'No game created. Waiting for a host.';
+      return 'Server currently inactive or unknown state';
     }
+
   },
 
   mounted() {
-    // check if theres an uploaded sound on the server
     this.checkHasSound();
+    this.gameStatusPolling = setInterval(this.getGameStatus, 2500); 
+    this.getGameStatus(); 
   },
 
   beforeUnmount() {
+    if (this.gameStatusPolling) {
+        clearInterval(this.gameStatusPolling);
+    }
+    
     if (this.audioObjectUrl) {
       URL.revokeObjectURL(this.audioObjectUrl);
       this.audioObjectUrl = null;
@@ -134,12 +147,65 @@ export default {
   },
 
   methods: {
-    // create a preview URL so we can play it immemidaitly
+    async getGameStatus() {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
+            this.serverGameStatus = 'Inactive';
+            return;
+        }
+        try {
+            const res = await fetch('/api/api/gameStatus', {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.status === 401) {
+                console.warn('[GameStatus] Token expired, stopping polling.');
+                this.serverGameStatus = 'Inactive'; 
+                clearInterval(this.gameStatusPolling);
+                this.gameStatusPolling = null;
+                return;
+            }
+
+            const data = await res.json().catch(() => ({}));
+            
+            if (res.ok && data.status === 'success') {
+                const rawStatus = data.Game_Status;
+                
+                if (typeof rawStatus === 'string' && rawStatus.length > 0) {
+                    const lowerStatus = rawStatus.toLowerCase();
+                    const newStatus = lowerStatus.charAt(0).toUpperCase() + lowerStatus.slice(1);
+                    
+                    const oldStatus = this.serverGameStatus; 
+
+                    this.serverGameStatus = newStatus;
+                    console.log(`[GameStatus] Server returned: ${rawStatus}. Client status set to: ${this.serverGameStatus}`);
+
+                   if (this.serverGameStatus === 'Idle' && oldStatus !== 'Idle') {
+                        console.info('[GameStatus] Game ended, resetting user joined status.');
+                        this.isUserJoined = false; 
+                    }
+
+                } else {
+                    console.warn('[GameStatus] Server response missing or invalid Game_Status:', rawStatus);
+                    this.serverGameStatus = 'Idle'; 
+                }
+
+            } else {
+                console.warn('[GameStatus] Failed (non-success response):', data.error || data.message || res.statusText);
+                this.serverGameStatus = 'Inactive';
+            }
+        } catch (err) {
+            console.error('[GameStatus] Poll failed (network error):', err);
+            this.serverGameStatus = 'Inactive'; 
+        }
+    },
+
     onFileSelected(e) {
       this.selectedFile = e.target.files[0] || null;
       console.log('Selected file:', this.selectedFile && this.selectedFile.name);
 
-      // remove old preview
       if (this.previewUrl) {
         URL.revokeObjectURL(this.previewUrl);
         this.previewUrl = null;
@@ -154,7 +220,6 @@ export default {
       }
     },
 
-    // fetch the sound from the server and cache it as an object URL
     async fetchSoundFromServer({ cacheBust = true } = {}) {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -163,18 +228,17 @@ export default {
       }
 
       try {
-        const base = '/api/api/sound';
-        let url;
-          if (cacheBust) {
-          if (base.includes('?')) {
-            url = base + '&cb=' + Date.now();
-          } else {
-            url = base + '?cb=' + Date.now();
-          }
-          } else {
-            url = base;
-          }
-
+          const base = '/api/api/sound';
+          let url;
+            if (cacheBust) {
+            if (base.includes('?')) {
+              url = base + '&cb=' + Date.now();
+            } else {
+              url = base + '?cb=' + Date.now();
+            }
+            } else {
+              url = base;
+            }
 
         console.info('[fetchSoundFromServer] requesting', url);
 
@@ -186,7 +250,6 @@ export default {
 
         console.info('[fetchSoundFromServer] response status:', res.status, res.statusText);
 
-        // debug
         try {
           console.info(
             '[fetchSoundFromServer] headers:',
@@ -250,7 +313,7 @@ export default {
 
       this.uploading = true;
       try {
-        const res = await fetch(`/api/api/uploadSound`, {
+        const res = await fetch(`/api/api/uploadSound`, { 
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData
@@ -289,7 +352,6 @@ export default {
       this.playing = true;
 
       try {
-        // play selected local file (preview)
         if (this.selectedFile && this.previewUrl) {
           console.log('Playing local preview:', this.selectedFile.name);
           const audio = new Audio(this.previewUrl);
@@ -313,7 +375,6 @@ export default {
 
         console.info('[playSound] playing from audioObjectUrl:', this.audioObjectUrl);
 
-        // always create a fresh audio instance so it uses the latest blob
         const audio = new Audio(this.audioObjectUrl);
         audio.onended = () => { this.playing = false; };
         audio.onerror = () => {
@@ -333,14 +394,13 @@ export default {
       if (!token) { this.hasSound = false; return; }
 
       try {
-        const res = await fetch('/api/api/sound', {
+        const res = await fetch('/api/api/sound', { 
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` }
         });
 
         if (res.ok) {
           this.hasSound = true;
-          // cache the audio
           await this.fetchSoundFromServer();
         } else {
           this.hasSound = false;
@@ -358,15 +418,21 @@ export default {
         return;
       }
 
+      if (this.serverGameStatus !== 'Created') {
+          alert(`Cannot join game. Current status is '${this.serverGameStatus}'. You can only join when the status is 'Created'.`);
+          return;
+      }
+      
       try {
-        const res = await fetch('/api/api/joinGame', {
+        const res = await fetch('/api/api/joinGame', { 
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json().catch(() => ({}));
+        
         if (res.ok && data.status === 'success') {
           alert('Joined game successfully!');
-          this.sessionStatus = 'active';
+          this.isUserJoined = true; 
         } else {
           const msg = data.error || data.message || `Failed to join (${res.status})`;
           alert(msg);
@@ -444,10 +510,10 @@ export default {
 
 <style>
 .page-container {
-  position: fixed;       
+  position: fixed; 	
   width: 100vw;
   height: 100vh;
-  overflow: hidden;      
+  overflow: hidden; 	 
   display: flex;
   justify-content: center;
   align-items: center;
@@ -455,15 +521,6 @@ export default {
 </style>
 
 <style scoped>
-.userboard-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh; 
-  width: 100%;
-  background: none;
-}
-
 .userboard-container {
   position: relative;
   top: 3%;
