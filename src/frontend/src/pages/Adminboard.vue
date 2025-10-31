@@ -81,8 +81,10 @@ export default {
   methods: {
     getAuthToken() {
       const token = localStorage.getItem('authToken');
+      console.log('[getAuthToken] token:', token);
       if (!token) {
         alert('You must log in first.');
+        console.warn('[getAuthToken] No token found, redirecting to /login');
         this.$router.push('/login');
         return null;
       }
@@ -90,20 +92,15 @@ export default {
     },
 
     onGameModeChange() {
+      console.log('[onGameModeChange] triggered, current gameMode:', this.gameMode, 'isGameActive:', this.isGameActive);
       if (this.isGameActive) return;
       this.message = `Game mode changed to ${this.gameMode}`;
-      console.log(`Selected game mode: ${this.gameMode}`);
     },
 
     async createGame() {
-      console.log("createGame() called");
+      console.log('[createGame] called, gameMode:', this.gameMode);
       const token = this.getAuthToken();
-      if (!token) {
-        console.log("No token found, aborting.");
-        return;
-      }
-
-      console.log("Selected mode:", this.gameMode);
+      if (!token) return;
 
       try {
         const res = await fetch('/api/api/createGame', {
@@ -114,75 +111,79 @@ export default {
           },
           body: JSON.stringify({ game_type: this.gameMode })  
         });
+        console.log('[createGame] response status:', res.status);
 
-        console.log("Response status:", res.status);
         const text = await res.text();
-        console.log("Raw response:", text);
+        console.log('[createGame] raw response:', text);
 
         let data;
         try { data = JSON.parse(text); } catch { data = { error: text }; }
 
         if (res.ok && data.status === 'success') {
+          console.log('[createGame] success:', data);
           this.message = data.message || `New ${this.gameMode} game created`;
           this.isGameActive = true;
-          console.log("Game created successfully!");
         } else {
+          console.warn('[createGame] failed response:', data);
           this.message = data.error || 'Failed to create game.';
-          console.warn("Backend said:", data);
         }
       } catch (err) {
-        console.error("Exception during fetch:", err);
+        console.error('[createGame] exception:', err);
         this.message = 'Network or server error while creating game.';
       }
     },
 
     async startGame() {
+      console.log('[startGame] called');
       const token = this.getAuthToken();
       if (!token) return;
 
       try {
-        console.log("Starting game...");
         const res = await fetch('/api/api/startGame', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        console.log('[startGame] response status:', res.status);
+
         const data = await res.json();
+        console.log('[startGame] parsed data:', data);
 
         if (res.ok && data.status === 'success') {
           this.message = data.message || 'Game started successfully.';
-          console.log("Game started:", data);
         } else {
+          console.warn('[startGame] failed response:', data);
           this.message = data.error || 'Failed to start game.';
-          console.warn("Start game response:", data);
         }
       } catch (err) {
-        console.error("Network or server error while starting game:", err);
+        console.error('[startGame] exception:', err);
         this.message = 'Network or server error while starting game.';
       }
     },
 
     async stopGame() {
+      console.log('[stopGame] called');
       const token = this.getAuthToken();
       if (!token) return;
 
       try {
-        console.log("Stopping game...");
         const res = await fetch('/api/api/stopGame', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        console.log('[stopGame] response status:', res.status);
+
         const data = await res.json();
+        console.log('[stopGame] parsed data:', data);
 
         if (res.ok && data.status === 'success') {
           this.message = data.message || 'Game stopped successfully.';
           this.isGameActive = false;
-          console.log("Game stopped, dropdown unlocked.");
         } else {
+          console.warn('[stopGame] failed response:', data);
           this.message = data.error || 'Failed to stop game.';
-          console.warn("Stop game response:", data);
         }
       } catch (err) {
-        console.error("Network or server error while stopping game:", err);
+        console.error('[stopGame] exception:', err);
         this.message = 'Network or server error while stopping game.';
       }
     },
@@ -194,7 +195,72 @@ export default {
         TeamDeathmatch: '/leaderboard-tdm'
       };
       this.$router.push(routes[this.gameMode]);
+    },
+
+    async fetchAllUsers() {
+  console.log("[fetchAllUsers] called");
+
+  const token = this.getAuthToken();
+  if (!token) {
+    console.warn("[fetchAllUsers] no auth token found");
+    return;
+  }
+
+  const url = "/api/api/users";
+  console.log("[fetchAllUsers] fetching from:", url);
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    console.log("[fetchAllUsers] response status:", res.status);
+
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      console.error("[fetchAllUsers] JSON parse failed:", err, text);
+      this.message = "Invalid JSON response from backend";
+      return;
     }
+
+    console.log("[fetchAllUsers] fetched users:", data);
+
+    if (!res.ok) {
+      this.message = data.error || `Fetch failed with ${res.status}`;
+      return;
+    }
+
+    // backend wraps user array in data.data
+    const users = Array.isArray(data.data) ? data.data : [];
+    console.log("[fetchAllUsers] extracted users:", users);
+
+    this.players = users.map((u, i) => ({
+      username: u.username || `User#${i}`,
+      team: u.pi_sn || "-",
+      online: false
+    }));
+
+    console.log("[fetchAllUsers] players array updated:", this.players);
+    this.message = `Fetched ${users.length} users successfully.`;
+
+  } catch (err) {
+    console.error("[fetchAllUsers] network or exception:", err);
+    this.message = "Network error while fetching users.";
+  }
+}
+
+  },
+
+  mounted() {
+    console.log('[mounted] AdminBoard mounted');
+    this.fetchAllUsers();
   }
 };
 </script>

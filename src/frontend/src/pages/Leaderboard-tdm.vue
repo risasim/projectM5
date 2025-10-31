@@ -60,7 +60,8 @@ export default {
       this.$router.go(-1);
     },
     connectLeaderboard() {
-      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard`;
+      const token = localStorage.getItem("jwt");
+      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard?token=${token}`;
       this.websocket = new WebSocket(websocketURL);
 
       this.websocket.onopen = () => {
