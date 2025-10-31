@@ -22,7 +22,7 @@
           <select
             id="gametype"
             class="adminboard-select"
-            v-model="gameMode"
+            v.model="gameMode"
             @change="onGameModeChange"
             :disabled="isGameActive"
           >
@@ -75,7 +75,9 @@ export default {
       message: '',
       gameMode: 'Freefall',
       players: [],
-      isGameActive: false
+      isGameActive: false,
+      serverGameStatus: 'Idle',
+      gameStatusPolling: null
     };
   },
   methods: {
@@ -95,6 +97,63 @@ export default {
       console.log('[onGameModeChange] triggered, current gameMode:', this.gameMode, 'isGameActive:', this.isGameActive);
       if (this.isGameActive) return;
       this.message = `Game mode changed to ${this.gameMode}`;
+    },
+
+    async getGameStatus() {
+        const token = this.getAuthToken();
+        if (!token) {
+            console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
+            this.serverGameStatus = 'Inactive';
+            this.isGameActive = false;
+            return;
+        }
+        try {
+            const res = await fetch('/api/api/gameStatus', {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.status === 401) {
+                console.warn('[GameStatus] Token expired, stopping polling.');
+                this.serverGameStatus = 'Inactive'; 
+                this.isGameActive = false;
+                clearInterval(this.gameStatusPolling);
+                this.gameStatusPolling = null;
+                return;
+            }
+
+            const data = await res.json().catch(() => ({}));
+            
+            if (res.ok && data.status === 'success') {
+                const rawStatus = data.Game_Status;
+                
+                if (typeof rawStatus === 'string' && rawStatus.length > 0) {
+                    const lowerStatus = rawStatus.toLowerCase();
+                    const newStatus = lowerStatus.charAt(0).toUpperCase() + lowerStatus.slice(1);
+                    
+                    const oldStatus = this.serverGameStatus; 
+                    this.serverGameStatus = newStatus;
+                    
+                    this.isGameActive = (newStatus === 'Created' || newStatus === 'Started');
+
+                    console.log(`[GameStatus] Server returned: ${rawStatus}. Client status set to: ${this.serverGameStatus}. isGameActive: ${this.isGameActive}`);
+
+                } else {
+                    console.warn('[GameStatus] Server response missing or invalid Game_Status:', rawStatus);
+                    this.serverGameStatus = 'Idle'; 
+                    this.isGameActive = false;
+                }
+
+            } else {
+                console.warn('[GameStatus] Failed (non-success response):', data.error || data.message || res.statusText);
+                this.serverGameStatus = 'Inactive';
+                this.isGameActive = false;
+            }
+        } catch (err) {
+            console.error('[GameStatus] Poll failed (network error):', err);
+            this.serverGameStatus = 'Inactive'; 
+            this.isGameActive = false;
+        }
     },
 
     async createGame() {
@@ -198,69 +257,76 @@ export default {
     },
 
     async fetchAllUsers() {
-  console.log("[fetchAllUsers] called");
+      console.log("[fetchAllUsers] called");
 
-  const token = this.getAuthToken();
-  if (!token) {
-    console.warn("[fetchAllUsers] no auth token found");
-    return;
-  }
-
-  const url = "/api/api/users";
-  console.log("[fetchAllUsers] fetching from:", url);
-
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
+      const token = this.getAuthToken();
+      if (!token) {
+        console.warn("[fetchAllUsers] no auth token found");
+        return;
       }
-    });
 
-    console.log("[fetchAllUsers] response status:", res.status);
+      const url = "/api/api/users";
+      console.log("[fetchAllUsers] fetching from:", url);
 
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (err) {
-      console.error("[fetchAllUsers] JSON parse failed:", err, text);
-      this.message = "Invalid JSON response from backend";
-      return;
+      try {
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        console.log("[fetchAllUsers] response status:", res.status);
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error("[fetchAllUsers] JSON parse failed:", err, text);
+          this.message = "Invalid JSON response from backend";
+          return;
+        }
+
+        console.log("[fetchAllUsers] fetched users:", data);
+
+        if (!res.ok) {
+          this.message = data.error || `Fetch failed with ${res.status}`;
+          return;
+        }
+
+        // backend wraps user array in data.data
+        const users = Array.isArray(data.data) ? data.data : [];
+        console.log("[fetchAllUsers] extracted users:", users);
+
+        this.players = users.map((u, i) => ({
+          username: u.username || `User#${i}`,
+          team: u.pi_sn || "-",
+          online: false
+        }));
+
+        console.log("[fetchAllUsers] players array updated:", this.players);
+        this.message = `Fetched ${users.length} users successfully.`;
+
+      } catch (err) {
+        console.error("[fetchAllUsers] network or exception:", err);
+        this.message = "Network error while fetching users.";
+      }
     }
-
-    console.log("[fetchAllUsers] fetched users:", data);
-
-    if (!res.ok) {
-      this.message = data.error || `Fetch failed with ${res.status}`;
-      return;
-    }
-
-    // backend wraps user array in data.data
-    const users = Array.isArray(data.data) ? data.data : [];
-    console.log("[fetchAllUsers] extracted users:", users);
-
-    this.players = users.map((u, i) => ({
-      username: u.username || `User#${i}`,
-      team: u.pi_sn || "-",
-      online: false
-    }));
-
-    console.log("[fetchAllUsers] players array updated:", this.players);
-    this.message = `Fetched ${users.length} users successfully.`;
-
-  } catch (err) {
-    console.error("[fetchAllUsers] network or exception:", err);
-    this.message = "Network error while fetching users.";
-  }
-}
-
   },
 
   mounted() {
     console.log('[mounted] AdminBoard mounted');
     this.fetchAllUsers();
+    this.getGameStatus();
+    this.gameStatusPolling = setInterval(this.getGameStatus, 2500);
+  },
+
+  beforeUnmount() {
+    if (this.gameStatusPolling) {
+      clearInterval(this.gameStatusPolling);
+    }
   }
 };
 </script>
