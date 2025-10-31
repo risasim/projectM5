@@ -62,13 +62,26 @@
 
         <div class="session-status">
           <p>
+            <!-- 
             Session status:
             <span :class="['status', sessionStatus]">{{ sessionStatusText }}</span>
+            doesnt work god damn it -->
+          </p>
+
+          <p style="margin-top:0.5rem;">
+            Your status:
+            <strong style="margin-left:0.5rem;">
+              <span v-if="joined">Joined</span>
+              <span v-else>Not joined</span>
+            </strong>
           </p>
         </div>
 
-        <button class="enter-session-btn" @click="enterSession">
-          Enter current game session
+        <button
+          class="enter-session-btn"
+          @click= "enterSession()"
+        >
+          <span>Enter current game session</span>
         </button>
       </div>
     </div>
@@ -97,19 +110,19 @@ export default {
 
   computed: {
     sessionStatusText() {
-      if (this.sessionStatus === 'active') return 'Active';
-      if (this.sessionStatus === 'waiting') return 'Waiting for players';
+      if (this.sessionStatus === 'active') return 'Game is currently running... Wait for it to finish before joining.';
+      if (this.sessionStatus === 'waiting') return 'Waiting for players, Join!';
+      if (this.sessionStatus === 'inactive') return 'Server currently inactive';
       return 'Inactive';
     }
   },
 
   mounted() {
-    // check if there's an uploaded sound on the server
+    // check if theres an uploaded sound on the server
     this.checkHasSound();
   },
 
   beforeUnmount() {
-    // tidy up object URLs
     if (this.audioObjectUrl) {
       URL.revokeObjectURL(this.audioObjectUrl);
       this.audioObjectUrl = null;
@@ -153,15 +166,12 @@ export default {
         const base = '/api/api/sound';
         let url;
           if (cacheBust) {
-            // if base already contains a "?" (has query params), append with &
           if (base.includes('?')) {
             url = base + '&cb=' + Date.now();
           } else {
-            // otherwise append with ?
             url = base + '?cb=' + Date.now();
           }
           } else {
-            // no cache-busting requested — use the base unchanged
             url = base;
           }
 
@@ -330,7 +340,7 @@ export default {
 
         if (res.ok) {
           this.hasSound = true;
-          // cache the server-side blob for later playback
+          // cache the audio
           await this.fetchSoundFromServer();
         } else {
           this.hasSound = false;
@@ -349,7 +359,7 @@ export default {
       }
 
       try {
-        const res = await fetch('/api/joinGame', {
+        const res = await fetch('/api/api/joinGame', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -569,11 +579,11 @@ export default {
 }
 
 .status.active {
-  color: green;
+  color: orange;
 }
 
 .status.waiting {
-  color: orange;
+  color: green;
 }
 
 .status.inactive {
