@@ -9,23 +9,25 @@
         <thead>
           <tr>
             <th>Username</th>
-            <th>Pi Serial</th>
-            <th>Death Sound</th>
+            <th>Team</th>
+            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="player in players" :key="player.id || player.username">
+          <tr v-for="player in players" :key="player.username">
             <td>{{ player.username }}</td>
-            <td>{{ player.pi_sn || '-' }}</td>
-            <td>{{ player.death_sound || 'None' }}</td>
+            <td>{{ player.team || '-' }}</td>
+            <td :class="player.online ? 'alive' : 'dead'">
+              {{ player.online ? 'Online' : 'Offline' }}
+            </td>
             <td>
               <button class="edit-btn" @click="editUser(player)">Edit</button>
-              <button class="delete-btn" @click="deleteUser(player)">Delete</button>
+              <button class="delete-btn" @click="deleteSelf()">Delete</button>
             </td>
           </tr>
           <tr v-if="players.length === 0">
-            <td colspan="4">No players found.</td>
+            <td colspan="4">No players connected.</td>
           </tr>
         </tbody>
       </table>
@@ -45,7 +47,8 @@ export default {
   data() {
     return {
       players: [],
-      message: ''
+      message: '',
+      websocket: null
     };
   },
   methods: {
@@ -55,23 +58,43 @@ export default {
         alert('You must log in first.');
         return;
       }
-
       try {
-        const response = await fetch('/api/api/users', {
+        const response = await fetch('/api/users', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch users: ${response.status}`);
-        }
-
         const data = await response.json();
-        console.log('Fetched user list:', data);
-
-        this.players = Array.isArray(data) ? data : [];
+        this.players = data;
       } catch (error) {
         console.error('Error loading user list:', error);
         this.message = 'Error loading user list.';
       }
+    },
+
+    connectPisSocket() {
+      const token = localStorage.getItem('authToken');
+      const websocketURL = `ws://116.203.97.62:8080/api/wsPis?token=${token}`;
+      this.websocket = new WebSocket(websocketURL);
+
+      this.websocket.onopen = () => console.log('Connected to WebSocketPis');
+      this.websocket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.devices) {
+            this.players = message.devices.map(device => ({
+              username: device.username,
+              team: device.team || '-',
+              online: device.connected
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocketPis data:', error);
+        }
+      };
+      this.websocket.onclose = () => {
+        console.log('WebSocketPis closed. Reconnecting in 5s...');
+        setTimeout(() => this.connectPisSocket(), 5000);
+      };
+      this.websocket.onerror = (error) => console.error('WebSocketPis error:', error);
     },
 
     editUser(player) {
@@ -79,36 +102,39 @@ export default {
       this.$router.push('/userboard');
     },
 
-    async deleteUser(player) {
+    async deleteSelf() {
       const token = localStorage.getItem('authToken');
       if (!token) {
         alert('You must log in first.');
         return;
       }
-
-      if (!confirm(`Are you sure you want to delete ${player.username}?`)) return;
+      if (!confirm('Are you sure that you want to delete your account?')) return;
 
       try {
-        const response = await fetch('/api/api/user', {
+        const response = await fetch('/api/user', {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
         });
-
         const data = await response.json();
-        if (response.ok && data.status === 'success') {
-          alert(`Deleted ${player.username} successfully.`);
-          this.fetchUsers();
+        if (data.status === 'success') {
+          this.message = data.message || 'Account deleted.';
         } else {
-          alert(data.error || 'Failed to delete user.');
+          this.message = data.error || 'Failed to delete account.';
         }
       } catch (error) {
         console.error('Delete failed:', error);
-        alert('Network error while deleting user.');
+        this.message = 'Network error while deleting account.';
       }
     }
   },
+
   mounted() {
     this.fetchUsers();
+    this.connectPisSocket();
+  },
+
+  beforeUnmount() {
+    if (this.websocket) this.websocket.close();
   }
 };
 </script>
