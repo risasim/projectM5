@@ -7,8 +7,7 @@ import json
 #Used to make a http request at the start of a connection.
 import requests
 import os
-from threading import Thread,Lock,Event
-from queue import Queue,Empty
+from threading import Thread
 from datetime import datetime
 import mediaplayer
 import mimetypes
@@ -17,19 +16,7 @@ import mimetypes
 from gpiozero import Button
 import time
 from GunSide.Gunled import changecolor
-from signal import pause
 from GunSide.Transmitter import shoot
-
-
-
-
-class PlayerState:
-
-    def __init__(self):
-        self.health = 1
-        self.timeAlive = 0
-        self.lock = Lock()
-
 
 
 
@@ -42,9 +29,6 @@ class WebClient:
         self.ws_url = f"ws{url}"
         self.api_key = apikey
         self.pi_sn = piSn
-        self.player = PlayerState()
-        self.running = Event()
-        self.queue = Queue()
         self.token = None
         self.auth_header = None
         self.web_sock = None

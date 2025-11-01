@@ -41,9 +41,3 @@ def playSound(filepath):
     except Exception as e:
         print(f"ERROR: there is an error namely \n {e}")
         
-        
-def mmain():
-    playSound("7NA.mp3")
-    
-
-#main()
