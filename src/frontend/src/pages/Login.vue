@@ -48,7 +48,7 @@ export default {
 
       try {
         // get the token
-        const response = await fetch('/api/auth', {
+        const response = await fetch('/api/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -125,7 +125,7 @@ export default {
   margin-bottom: 1.5rem;
   font-size: 2rem;
   font-weight: 700;
-  color: #b30000;
+  color: #ff4b4b;
 }
 
 .login-form {
@@ -144,20 +144,18 @@ export default {
 }
 
 .login-input:focus {
-  border-color: #b30000;
-  box-shadow: 0 0 0.4vw rgba(255, 75, 75, 0.4);
+  border-color: #ff4b4b;
+  box-shadow: 0 0 6px rgba(255, 75, 75, 0.4);
 }
 
 .login-button {
-  background: #b30000;
   background: #ff1111;
   color: white;
   font-size: 1.1rem;
   font-weight: 600;
   padding: 0.8rem;
   border: none;
-  border-radius: 0.5vw;
-
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 4px solid #000;
@@ -165,7 +163,7 @@ export default {
 }
 
 .login-button:hover {
-  background: #b30000;
+  background: #ff6666;
   transform: scale(1.03);
 }
 

@@ -26,8 +26,7 @@ const routes = [
     path: '/userboard',
     name: 'AppUserboard',
     component: Userboard
-    },
-    
+  },
   {
 
     path: '/adminboard',

@@ -4,9 +4,18 @@
       <div class="top-section">
         <h1 class="leaderboard-title">Leaderboard (Team Deathmatch)</h1>
       </div>
+      
+      <p v-if="serverGameStatus !== 'Started' && teams.length === 0" style="text-align: center; margin-bottom: 1rem; font-weight: 600;">
+        Waiting for game to start...
+      </p>
+      
+      <div v-if="teams.length === 0 && serverGameStatus === 'Started'" style="text-align: center; margin-bottom: 1rem;">
+        Waiting for player data...
+      </div>
 
-      <div v-for="(team, index) in teams" :key="team.name" class="team-section">
+      <div v-for="(team, index) in sortedTeams" :key="team.name" class="team-section">
         <h2 class="team-name">{{ index + 1 }}. {{ team.name }} — Score: {{ team.score }}</h2>
+
         <table class="leaderboard-table">
           <thead>
             <tr>
@@ -16,7 +25,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="member in team.members" :key="member.username">
+            <tr v-for="member in team.sortedMembers" :key="member.username">
               <td>{{ member.username }}</td>
               <td>{{ member.deaths }}</td>
               <td>{{ member.score }}</td>
@@ -25,9 +34,7 @@
         </table>
       </div>
 
-      <div>
-        <button class="back-btn" @click="goBack">Back</button>
-      </div>
+      <button class="back-btn" @click="goBack">Back</button>
     </div>
   </div>
 </template>
@@ -38,62 +45,148 @@ export default {
   data() {
     return {
       teams: [],
-      ws: null
+      websocket: null,
+      serverGameStatus: 'Idle',
+      gameStatusPolling: null
     };
+  },
+  computed: {
+    // sort the teams by total score in descending order
+    sortedTeams() {
+      return this.teams
+        .slice()
+        .sort((a, b) => b.score - a.score)
+        .map(team => ({
+          ...team,
+          // each team members sorted by score(descending) and deaths(ascending)
+          sortedMembers: team.members
+            .slice()
+            .sort((a, b) => b.score - a.score || a.deaths - b.deaths)
+        }));
+    }
   },
   methods: {
     goBack() {
       this.$router.go(-1);
     },
+
+    async getGameStatus() {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
+            this.serverGameStatus = 'Inactive';
+            return;
+        }
+        try {
+            const res = await fetch('/api/api/gameStatus', {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.status === 401) {
+                console.warn('[GameStatus] Token expired, stopping polling.');
+                this.serverGameStatus = 'Inactive'; 
+                if (this.gameStatusPolling) clearInterval(this.gameStatusPolling);
+                this.gameStatusPolling = null;
+                return;
+            }
+
+            const data = await res.json().catch(() => ({}));
+            
+            if (res.ok && data.status === 'success') {
+                const rawStatus = data.Game_Status;
+                
+                if (typeof rawStatus === 'string' && rawStatus.length > 0) {
+                    const lowerStatus = rawStatus.toLowerCase();
+                    const newStatus = lowerStatus.charAt(0).toUpperCase() + lowerStatus.slice(1);
+                    
+                    const oldStatus = this.serverGameStatus; 
+                    this.serverGameStatus = newStatus;
+
+                   if (newStatus === 'Started' && oldStatus !== 'Started') {
+                        console.log('[GameStatus] Game has started, connecting to WebSocket.');
+                        this.connectLeaderboard();
+                    } else if (newStatus !== 'Started' && oldStatus === 'Started') {
+                        console.log('[GameStatus] Game has stopped, disconnecting WebSocket.');
+                        if (this.websocket) {
+                            this.websocket.close();
+                        }
+                        this.teams = [];
+                    }
+
+                } else {
+                    console.warn('[GameStatus] Server response missing or invalid Game_Status:', rawStatus);
+                    this.serverGameStatus = 'Idle'; 
+                    if (this.websocket) this.websocket.close();
+                    this.teams = [];
+                }
+
+            } else {
+                console.warn('[GameStatus] Failed (non-success response):', data.error || data.message || res.statusText);
+                this.serverGameStatus = 'Inactive';
+                if (this.websocket) this.websocket.close();
+                this.teams = [];
+            }
+        } catch (err) {
+            console.error('[GameStatus] Poll failed (network error):', err);
+            this.serverGameStatus = 'Inactive'; 
+            if (this.websocket) this.websocket.close();
+            this.teams = [];
+        }
+    },
+
     connectLeaderboard() {
+      const token = localStorage.getItem("authToken");
+      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard?token=${token}`;
+      this.websocket = new WebSocket(websocketURL);
 
-      const wsUrl = `ws://116.203.97.62:8080/api/wsLeaderboard`;
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
+      this.websocket.onopen = () => {
         console.log('Connected to leaderboard WebSocket (TDM)');
       };
 
-      this.ws.onmessage = (event) => {
+      this.websocket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
 
-          // only for TDM updates
-          if (message.game_type && message.game_type.toLowerCase() === 'teamdeathmatch') {
-            const teamsData = message.data?.teams || [];
-            this.teams = teamsData.map(team => ({
+          // only to process the team deathmatch
+          if (message.game_type?.toLowerCase() === 'teamdeathmatch' && Array.isArray(message.teams)) {
+            this.teams = message.teams.map(team => ({
               name: team.name,
               score: team.score || 0,
-              members: team.members.map(m => ({
+              members: team.members?.map(m => ({
                 username: m.username,
                 deaths: m.deaths || 0,
                 score: m.score || 0
-              }))
+              })) || []
             }));
-
-            // sort by the score by descending order
-            this.teams.sort((a, b) => b.score - a.score);
           }
-        } catch (err) {
-          console.error('WS parse error:', err);
+        } catch (error) {
+          console.error('WebSocket parse error:', error);
         }
       };
 
-      this.ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
+      this.websocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
       };
 
-      this.ws.onclose = () => {
-        console.log('WebSocket closed. Reconnecting in 5s...');
-        setTimeout(() => this.connectLeaderboard(), 5000);
+      this.websocket.onclose = () => {
+        console.log('WebSocket closed.');
+        if (this.serverGameStatus === 'Started') {
+          console.log('Game is active. Reconnecting in 5s...');
+          setTimeout(this.connectLeaderboard, 5000);
+        } else {
+          console.log('Game is not active. Not reconnecting.');
+        }
       };
     }
   },
   mounted() {
-    this.connectLeaderboard();
+    this.getGameStatus();
+    this.gameStatusPolling = setInterval(this.getGameStatus, 2500);
   },
   beforeUnmount() {
-    if (this.ws) this.ws.close();
+    if (this.gameStatusPolling) clearInterval(this.gameStatusPolling);
+    if (this.websocket) this.websocket.close();
   }
 };
 </script>

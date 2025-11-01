@@ -4,6 +4,10 @@
       <div class="top-section">
         <h1 class="leaderboard-title">Leaderboard (Infected)</h1>
       </div>
+      
+      <p v-if="serverGameStatus !== 'Started' && players.length === 0" style="text-align: center; margin-bottom: 1rem; font-weight: 600;">
+        Waiting for game to start...
+      </p>
 
       <table class="leaderboard-table">
         <thead>
@@ -15,7 +19,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(player, index) in players" :key="player.username">
+           <tr v-if="players.length === 0">
+             <td colspan="4">{{ serverGameStatus === 'Started' ? 'Waiting for player data...' : 'Game not active.' }}</td>
+          </tr>
+          <tr v-for="(player, index) in sortedPlayers" :key="player.username">
             <td>{{ index + 1 }}</td>
             <td>{{ player.username }}</td>
             <td :style="{ color: player.infected ? 'red' : 'blue' }">
@@ -26,9 +33,7 @@
         </tbody>
       </table>
 
-      <div>
-        <button class="back-btn" @click="goBack">Back</button>
-      </div>
+      <button class="back-btn" @click="goBack">Back</button>
     </div>
   </div>
 </template>
@@ -39,62 +44,136 @@ export default {
   data() {
     return {
       players: [],
-      ws: null
+      websocket: null,
+      serverGameStatus: 'Idle',
+      gameStatusPolling: null
     };
+  },
+  computed: {
+    // sorting: survivors first, then highest score
+    sortedPlayers() {
+      return this.players.slice().sort((a, b) =>
+        Number(a.infected) - Number(b.infected) || b.score - a.score
+      );
+    }
   },
   methods: {
     goBack() {
       this.$router.go(-1);
     },
+
+    async getGameStatus() {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
+            this.serverGameStatus = 'Inactive';
+            return;
+        }
+        try {
+            const res = await fetch('/api/api/gameStatus', {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.status === 401) {
+                console.warn('[GameStatus] Token expired, stopping polling.');
+                this.serverGameStatus = 'Inactive'; 
+                if (this.gameStatusPolling) clearInterval(this.gameStatusPolling);
+                this.gameStatusPolling = null;
+                return;
+            }
+
+            const data = await res.json().catch(() => ({}));
+            
+            if (res.ok && data.status === 'success') {
+                const rawStatus = data.Game_Status;
+                
+                if (typeof rawStatus === 'string' && rawStatus.length > 0) {
+                    const lowerStatus = rawStatus.toLowerCase();
+                    const newStatus = lowerStatus.charAt(0).toUpperCase() + lowerStatus.slice(1);
+                    
+                    const oldStatus = this.serverGameStatus; 
+                    this.serverGameStatus = newStatus;
+
+                   if (newStatus === 'Started' && oldStatus !== 'Started') {
+                        console.log('[GameStatus] Game has started, connecting to WebSocket.');
+                        this.connectLeaderboard();
+                    } else if (newStatus !== 'Started' && oldStatus === 'Started') {
+                        console.log('[GameStatus] Game has stopped, disconnecting WebSocket.');
+                        if (this.websocket) {
+                            this.websocket.close();
+                        }
+                        this.players = [];
+                    }
+
+                } else {
+                    console.warn('[GameStatus] Server response missing or invalid Game_Status:', rawStatus);
+                    this.serverGameStatus = 'Idle'; 
+                    if (this.websocket) this.websocket.close();
+                    this.players = [];
+                }
+
+            } else {
+                console.warn('[GameStatus] Failed (non-success response):', data.error || data.message || res.statusText);
+                this.serverGameStatus = 'Inactive';
+                if (this.websocket) this.websocket.close();
+                this.players = [];
+            }
+        } catch (err) {
+            console.error('[GameStatus] Poll failed (network error):', err);
+            this.serverGameStatus = 'Inactive'; 
+            if (this.websocket) this.websocket.close();
+            this.players = [];
+        }
+    },
+
     connectLeaderboard() {
+      const token = localStorage.getItem("authToken");
+      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard?token=${token}`;
+      this.websocket = new WebSocket(websocketURL);
 
-      // connect to websocket
-      const wsUrl = `ws://116.203.97.62:8080/api/wsLeaderboard`;
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
-        console.log('Connected to leaderboard WebSocket (INFECTED)');
+      this.websocket.onopen = () => {
+        console.log('Connected to leaderboard WebSocket (Infected)');
       };
 
-      this.ws.onmessage = (event) => {
+      this.websocket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
 
-          // checks game type
-          if (message.game_type && message.game_type.toLowerCase() === 'infected') {
-            const infectedNames = message.data?.infected?.map(p => p.username) || [];
-            const playerList = message.players || [];
-
-            // combines survivors and infected
-            this.players = playerList.map((p, i) => ({
-              username: p.username,
-              infected: infectedNames.includes(p.username),
-              score: p.score || Math.floor(Math.random() * 30)
+          if (message.game_type?.toLowerCase() === 'infected' && Array.isArray(message.players)) {
+            this.players = message.players.map(player => ({
+              username: player.username,
+              infected: !!player.infected,
+              score: player.score || 0
             }));
-
-            // sorting, survivors first
-            this.players.sort((a, b) => Number(a.infected) - Number(b.infected));
           }
-        } catch (err) {
-          console.error('WS parse error:', err);
+        } catch (error) {
+          console.error('WebSocket parse error:', error);
         }
       };
 
-      this.ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
+      this.websocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
       };
 
-      this.ws.onclose = () => {
-        console.log('WebSocket closed. Reconnecting in 5s...');
-        setTimeout(() => this.connectLeaderboard(), 5000);
+      this.websocket.onclose = () => {
+        console.log('WebSocket closed.');
+        if (this.serverGameStatus === 'Started') {
+          console.log('Game is active. Reconnecting in 5 seconds...');
+          setTimeout(this.connectLeaderboard, 5000);
+        } else {
+          console.log('Game is not active. Not reconnecting.');
+        }
       };
     }
   },
   mounted() {
-    this.connectLeaderboard();
+    this.getGameStatus();
+    this.gameStatusPolling = setInterval(this.getGameStatus, 2500);
   },
   beforeUnmount() {
-    if (this.ws) this.ws.close();
+    if (this.gameStatusPolling) clearInterval(this.gameStatusPolling);
+    if (this.websocket) this.websocket.close();
   }
 };
 </script>
