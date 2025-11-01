@@ -2,6 +2,7 @@
   <div class="page-container">
     <div class="adminboard-page">
       <div class="adminboard-container">
+
         <div class="top-buttons">
           <div class="left-buttons">
             <button class="adminboard-btn" @click="$router.push('/adminedit')">
@@ -11,7 +12,9 @@
 
           <h1 class="adminboard-title">Game Session Settings</h1>
 
-          <button class="adminboard-btn" @click="goToLeaderboard">Leaderboard</button>
+          <button class="adminboard-btn" @click="goToLeaderboard">
+            Leaderboard
+          </button>
         </div>
 
         <div class="gametype-select">
@@ -19,13 +22,17 @@
           <select
             id="gametype"
             class="adminboard-select"
-            v-model="gameMode"
-            @change="handleGameModeChange"
+            v.model="gameMode"
+            @change="onGameModeChange"
+            :disabled="isGameActive"
           >
             <option value="Freefall">FreeFall</option>
             <option value="Infected">Infected</option>
             <option value="TeamDeathmatch">Team Deathmatch</option>
           </select>
+          <p v-if="isGameActive" style="color: red; font-weight: 600; margin-top: 0.5rem;">
+            Game active — cannot change mode
+          </p>
         </div>
 
         <table class="player-table">
@@ -37,21 +44,21 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="players.length === 0">
+              <td colspan="3">No players connected yet.</td>
+            </tr>
             <tr v-for="player in players" :key="player.username">
               <td>{{ player.username }}</td>
               <td>{{ player.team || '-' }}</td>
-              <td :class="player.online ? 'alive' : 'dead'">{{ player.online ? 'Online' : 'Offline' }}</td>
-            </tr>
-            <tr v-if="players.length === 0">
-              <td colspan="3">No players connected yet.</td>
+              <td>{{ player.online ? 'Online' : 'Offline' }}</td>
             </tr>
           </tbody>
         </table>
 
         <div class="session-buttons">
           <button class="start-session" @click="createGame">Create Game</button>
-          <button class="start-session" @click="startGameSession">Start Game</button>
-          <button class="end-session" @click="endGameSession">Stop Game</button>
+          <button class="start-session" @click="startGame">Start Game</button>
+          <button class="end-session" @click="stopGame">Stop Game</button>
         </div>
 
         <div v-if="message" class="message-box">{{ message }}</div>
@@ -68,170 +75,258 @@ export default {
       message: '',
       gameMode: 'Freefall',
       players: [],
-      websocket: null,
-      gameStatus: 'Idle',
-      statusInterval: null
+      isGameActive: false,
+      serverGameStatus: 'Idle',
+      gameStatusPolling: null
     };
   },
   methods: {
-    getToken() {
+    getAuthToken() {
       const token = localStorage.getItem('authToken');
+      console.log('[getAuthToken] token:', token);
       if (!token) {
         alert('You must log in first.');
+        console.warn('[getAuthToken] No token found, redirecting to /login');
+        this.$router.push('/login');
         return null;
       }
       return token;
     },
 
+    onGameModeChange() {
+      console.log('[onGameModeChange] triggered, current gameMode:', this.gameMode, 'isGameActive:', this.isGameActive);
+      if (this.isGameActive) return;
+      this.message = `Game mode changed to ${this.gameMode}`;
+    },
+
+    async getGameStatus() {
+        const token = this.getAuthToken();
+        if (!token) {
+            console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
+            this.serverGameStatus = 'Inactive';
+            this.isGameActive = false;
+            return;
+        }
+        try {
+            const res = await fetch('/api/api/gameStatus', {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.status === 401) {
+                console.warn('[GameStatus] Token expired, stopping polling.');
+                this.serverGameStatus = 'Inactive'; 
+                this.isGameActive = false;
+                clearInterval(this.gameStatusPolling);
+                this.gameStatusPolling = null;
+                return;
+            }
+
+            const data = await res.json().catch(() => ({}));
+            
+            if (res.ok && data.status === 'success') {
+                const rawStatus = data.Game_Status;
+                
+                if (typeof rawStatus === 'string' && rawStatus.length > 0) {
+                    const lowerStatus = rawStatus.toLowerCase();
+                    const newStatus = lowerStatus.charAt(0).toUpperCase() + lowerStatus.slice(1);
+                    
+                    const oldStatus = this.serverGameStatus; 
+                    this.serverGameStatus = newStatus;
+                    
+                    this.isGameActive = (newStatus === 'Created' || newStatus === 'Started');
+
+                    console.log(`[GameStatus] Server returned: ${rawStatus}. Client status set to: ${this.serverGameStatus}. isGameActive: ${this.isGameActive}`);
+
+                } else {
+                    console.warn('[GameStatus] Server response missing or invalid Game_Status:', rawStatus);
+                    this.serverGameStatus = 'Idle'; 
+                    this.isGameActive = false;
+                }
+
+            } else {
+                console.warn('[GameStatus] Failed (non-success response):', data.error || data.message || res.statusText);
+                this.serverGameStatus = 'Inactive';
+                this.isGameActive = false;
+            }
+        } catch (err) {
+            console.error('[GameStatus] Poll failed (network error):', err);
+            this.serverGameStatus = 'Inactive'; 
+            this.isGameActive = false;
+        }
+    },
+
     async createGame() {
-      const token = this.getToken();
+      console.log('[createGame] called, gameMode:', this.gameMode);
+      const token = this.getAuthToken();
       if (!token) return;
+
       try {
-        const response = await fetch('/api/createGame', {
+        const res = await fetch('/api/api/createGame', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ game_type: this.gameMode })
+          body: JSON.stringify({ game_type: this.gameMode })  
         });
-        const data = await response.json();
-        if (data.status === 'success') {
-          this.message = data.message || 'Game created successfully';
-          alert(this.message);
+        console.log('[createGame] response status:', res.status);
+
+        const text = await res.text();
+        console.log('[createGame] raw response:', text);
+
+        let data;
+        try { data = JSON.parse(text); } catch { data = { error: text }; }
+
+        if (res.ok && data.status === 'success') {
+          console.log('[createGame] success:', data);
+          this.message = data.message || `New ${this.gameMode} game created`;
+          this.isGameActive = true;
         } else {
-          this.message = data.error || 'Failed to create game';
-          alert(this.message);
+          console.warn('[createGame] failed response:', data);
+          this.message = data.error || 'Failed to create game.';
         }
-      } catch (error) {
-        console.error('Create game error:', error);
-        this.message = 'Network error while creating game.';
+      } catch (err) {
+        console.error('[createGame] exception:', err);
+        this.message = 'Network or server error while creating game.';
       }
     },
 
-    async startGameSession() {
-      const token = this.getToken();
+    async startGame() {
+      console.log('[startGame] called');
+      const token = this.getAuthToken();
       if (!token) return;
+
       try {
-        const response = await fetch('/api/startGame', {
+        const res = await fetch('/api/api/startGame', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await response.json();
-        if (data.status === 'success') {
-          this.message = data.message || 'Game started successfully';
-          alert(this.message);
-          this.connectPisSocket();
+        console.log('[startGame] response status:', res.status);
+
+        const data = await res.json();
+        console.log('[startGame] parsed data:', data);
+
+        if (res.ok && data.status === 'success') {
+          this.message = data.message || 'Game started successfully.';
         } else {
-          this.message = data.error || 'Failed to start game';
-          alert(this.message);
+          console.warn('[startGame] failed response:', data);
+          this.message = data.error || 'Failed to start game.';
         }
-      } catch (error) {
-        console.error('Start game error:', error);
-        this.message = 'Network error while starting game.';
+      } catch (err) {
+        console.error('[startGame] exception:', err);
+        this.message = 'Network or server error while starting game.';
       }
     },
 
-    async endGameSession() {
-      const token = this.getToken();
+    async stopGame() {
+      console.log('[stopGame] called');
+      const token = this.getAuthToken();
       if (!token) return;
+
       try {
-        const response = await fetch('/api/stopGame', {
+        const res = await fetch('/api/api/stopGame', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await response.json();
-        if (data.status === 'success') {
-          this.message = data.message || 'Game stopped successfully';
-          alert(this.message);
-          this.disconnectPisSocket();
+        console.log('[stopGame] response status:', res.status);
+
+        const data = await res.json();
+        console.log('[stopGame] parsed data:', data);
+
+        if (res.ok && data.status === 'success') {
+          this.message = data.message || 'Game stopped successfully.';
+          this.isGameActive = false;
         } else {
-          this.message = data.error || 'Failed to stop game';
-          alert(this.message);
+          console.warn('[stopGame] failed response:', data);
+          this.message = data.error || 'Failed to stop game.';
         }
-      } catch (error) {
-        console.error('Stop game error:', error);
-        this.message = 'Network error while stopping game.';
+      } catch (err) {
+        console.error('[stopGame] exception:', err);
+        this.message = 'Network or server error while stopping game.';
       }
-    },
-
-    async pollGameStatus() {
-      const token = this.getToken();
-      if (!token) return;
-      try {
-        const response = await fetch('/api/api/gameStatus', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
-        if (data.Game_Status) {
-          this.gameStatus = data.Game_Status;
-          this.message = `Game status: ${data.Game_Status}`;
-        }
-      } catch (error) {
-        console.error('Status poll error:', error);
-      }
-    },
-
-    connectPisSocket() {
-      if (this.websocket) this.websocket.close();
-      const websocketURL = 'ws://116.203.97.62:8080/api/wsPis';
-      this.websocket = new WebSocket(websocketURL);
-      this.websocket.onopen = () => console.log('Connected to Pi WebSocket');
-      this.websocket.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          if (message.devices) {
-            this.players = message.devices.map(device => ({
-              username: device.username,
-              team: device.team || '-',
-              online: device.connected
-            }));
-          }
-        } catch (error) {
-          console.error('WebSocket parse error:', error);
-        }
-      };
-      this.websocket.onerror = (error) => console.error('WebSocket error:', error);
-      this.websocket.onclose = () => {
-        console.log('WebSocket closed, retrying in 5s...');
-        setTimeout(() => {
-          if (this.gameStatus === 'Started') this.connectPisSocket();
-        }, 5000);
-      };
-    },
-
-    disconnectPisSocket() {
-      if (this.websocket) {
-        this.websocket.close();
-        this.websocket = null;
-      }
-      this.players = [];
-    },
-
-    handleGameModeChange(event) {
-      this.gameMode = event.target.value;
-      this.message = `Game mode changed to ${this.gameMode}`;
-      alert(`Game mode changed to ${this.gameMode}`);
     },
 
     goToLeaderboard() {
-      const map = {
+      const routes = {
         Freefall: '/leaderboard-ffa',
         Infected: '/leaderboard-inf',
         TeamDeathmatch: '/leaderboard-tdm'
       };
-      this.$router.push(map[this.gameMode]);
+      this.$router.push(routes[this.gameMode]);
+    },
+
+    async fetchAllUsers() {
+      console.log("[fetchAllUsers] called");
+
+      const token = this.getAuthToken();
+      if (!token) {
+        console.warn("[fetchAllUsers] no auth token found");
+        return;
+      }
+
+      const url = "/api/api/users";
+      console.log("[fetchAllUsers] fetching from:", url);
+
+      try {
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        console.log("[fetchAllUsers] response status:", res.status);
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error("[fetchAllUsers] JSON parse failed:", err, text);
+          this.message = "Invalid JSON response from backend";
+          return;
+        }
+
+        console.log("[fetchAllUsers] fetched users:", data);
+
+        if (!res.ok) {
+          this.message = data.error || `Fetch failed with ${res.status}`;
+          return;
+        }
+
+        // backend wraps user array in data.data
+        const users = Array.isArray(data.data) ? data.data : [];
+        console.log("[fetchAllUsers] extracted users:", users);
+
+        this.players = users.map((u, i) => ({
+          username: u.username || `User#${i}`,
+          team: u.pi_sn || "-",
+          online: false
+        }));
+
+        console.log("[fetchAllUsers] players array updated:", this.players);
+        this.message = `Fetched ${users.length} users successfully.`;
+
+      } catch (err) {
+        console.error("[fetchAllUsers] network or exception:", err);
+        this.message = "Network error while fetching users.";
+      }
     }
   },
 
   mounted() {
-    this.pollGameStatus();
-    this.statusInterval = setInterval(this.pollGameStatus, 3000);
+    console.log('[mounted] AdminBoard mounted');
+    this.fetchAllUsers();
+    this.getGameStatus();
+    this.gameStatusPolling = setInterval(this.getGameStatus, 2500);
   },
 
   beforeUnmount() {
-    clearInterval(this.statusInterval);
-    this.disconnectPisSocket();
+    if (this.gameStatusPolling) {
+      clearInterval(this.gameStatusPolling);
+    }
   }
 };
 </script>
