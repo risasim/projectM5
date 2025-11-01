@@ -7,7 +7,6 @@ import Leaderboard from '@/pages/Leaderboard.vue'
 import LeaderboardFFA from '@/pages/Leaderboard-ffa.vue'
 import LeaderboardTDM from '@/pages/Leaderboard-tdm.vue'
 import LeaderboardINF from '@/pages/Leaderboard-inf.vue'
-import AdminEdit from '@/pages/AdminEdit.vue'
 
 
 const routes = [
@@ -52,11 +51,6 @@ const routes = [
     path: '/leaderboard-inf',
     name: 'LeaderboardINF',
     component: LeaderboardINF
-  },
-  {
-    path: '/adminedit',
-    name:'AdminEdit',
-    component: AdminEdit
   }
 ]
 
@@ -73,7 +67,7 @@ router.beforeEach((to, from, next) => {
   const protectedRoutes = ['/userboard']
 
   // routes that require admin access
-  const adminRoutes = ['/adminboard', '/adminedit']
+  const adminRoutes = ['/adminboard']
 
   // not logged in
   if (!token && protectedRoutes.includes(to.path)) {

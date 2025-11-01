@@ -4,11 +4,6 @@
       <div class="adminboard-container">
 
         <div class="top-buttons">
-          <div class="left-buttons">
-            <button class="adminboard-btn" @click="$router.push('/adminedit')">
-              Manage Players
-            </button>
-          </div>
 
           <h1 class="adminboard-title">Game Session Settings</h1>
 
