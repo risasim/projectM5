@@ -243,8 +243,17 @@ func (e EndPointHandler) JoinGame(c *gin.Context) {
 	}
 	err = e.GameManager.AddPlayer(player)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "couldn't add player", "details": err.Error()})
+		c.JSON(500, gin.H{"error": "couldn't add Player", "details": err.Error()})
 		return
 	}
 	c.JSON(200, gin.H{"status": "success", "message": "Successfully joined game"})
+}
+
+func (e EndPointHandler) GetSessionPlayers(c *gin.Context) {
+	if e.GameManager.GameStatus == Idle {
+		c.JSON(400, gin.H{"error": "No game has been created"})
+		return
+	}
+	players := e.GameManager.SessionPlayers()
+	c.JSON(200, gin.H{"status": "success", "Players": players})
 }

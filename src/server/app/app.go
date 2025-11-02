@@ -146,6 +146,7 @@ func (a *App) CreateRoutes() {
 	protected.POST("/uploadSound", endPointHandler.UploadSound)
 	protected.GET("/sound", endPointHandler.GetSound)
 	protected.GET("/gameStatus", endPointHandler.GetGameStatus)
+	protected.GET("/sessionPlayers", endPointHandler.GetSessionPlayers)
 	//For admin - add the middleware for checking
 	adminProtected.POST("/createGame", endPointHandler.CreateGame)
 	adminProtected.POST("/startGame", endPointHandler.StartGame)

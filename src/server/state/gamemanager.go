@@ -65,7 +65,7 @@ func (gm *GameManager) CreateNewGame(gameType communication.GameType) error {
 
 	// Initialise a new game session
 	gm.CurrentSession = &Session{
-		player:   []Player{},
+		Player:   []Player{},
 		hitData:  []communication.HitData{},
 		GameType: gameType,
 	}
@@ -118,7 +118,7 @@ func (gm *GameManager) EndGame() error {
 	return nil
 }
 
-// AddPlayer to add a player to the current game session
+// AddPlayer to add a Player to the current game session
 func (gm *GameManager) AddPlayer(player Player) error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
@@ -130,28 +130,38 @@ func (gm *GameManager) AddPlayer(player Player) error {
 		return fmt.Errorf("a game has already started")
 	}
 
-	// Checking if a player is already in the game session
-	for _, p := range gm.CurrentSession.player {
+	// Checking if a Player is already in the game session
+	for _, p := range gm.CurrentSession.Player {
 		if p.PiSN == player.PiSN {
-			return fmt.Errorf("a player with this ID is already in the game")
+			return fmt.Errorf("a Player with this ID is already in the game")
 		}
 	}
 
-	gm.CurrentSession.player = append(gm.CurrentSession.player, player)
+	gm.CurrentSession.Player = append(gm.CurrentSession.Player, player)
 	return nil
 }
 
-// RemovePlayer to remove a player from the current game session
+func (gm *GameManager) SessionPlayers() []string {
+	gm.Mutex.Lock()
+	defer gm.Mutex.Unlock()
+	usernames := make([]string, len(gm.CurrentSession.Player))
+	for i, p := range gm.CurrentSession.Player {
+		usernames[i] = p.Username
+	}
+	return usernames
+}
+
+// RemovePlayer to remove a Player from the current game session
 func (gm *GameManager) RemovePlayer(player Player) error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
-	for i, p := range gm.CurrentSession.player {
+	for i, p := range gm.CurrentSession.Player {
 		if p.PiSN == player.PiSN {
-			gm.CurrentSession.player = append(gm.CurrentSession.player[:i], gm.CurrentSession.player[i+1:]...)
+			gm.CurrentSession.Player = append(gm.CurrentSession.Player[:i], gm.CurrentSession.Player[i+1:]...)
 			return nil
 		}
 	}
-	return fmt.Errorf("error trying to remove player with this ID")
+	return fmt.Errorf("error trying to remove Player with this ID")
 }
 
 func (gm *GameManager) WsPisHandler(c *gin.Context) {
