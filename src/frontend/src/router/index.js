@@ -7,6 +7,8 @@ import Leaderboard from '@/pages/Leaderboard.vue'
 import LeaderboardFFA from '@/pages/Leaderboard-ffa.vue'
 import LeaderboardTDM from '@/pages/Leaderboard-tdm.vue'
 import LeaderboardINF from '@/pages/Leaderboard-inf.vue'
+import Adminadduser from '@/pages/Adminadduser.vue'
+import { components } from 'vue-range-slider'
 
 
 const routes = [
@@ -51,6 +53,11 @@ const routes = [
     path: '/leaderboard-inf',
     name: 'LeaderboardINF',
     component: LeaderboardINF
+  },
+  {
+    path: '/adminadduser',
+    name: Adminadduser,
+    component: Adminadduser
   }
 ]
 

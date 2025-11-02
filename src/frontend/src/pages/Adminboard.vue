@@ -4,12 +4,11 @@
       <div class="adminboard-container">
 
         <div class="top-buttons">
-
           <h1 class="adminboard-title">Game Session Settings</h1>
-
-          <button class="adminboard-btn" @click="goToLeaderboard">
-            Leaderboard
-          </button>
+          <div class="button-group">
+            <button class="adminboard-btn" @click="$router.push('/adminadduser')">Add User</button>
+            <button class="adminboard-btn" @click="goToLeaderboard">Leaderboard</button>
+          </div>
         </div>
 
         <div class="gametype-select">
@@ -17,8 +16,7 @@
           <select
             id="gametype"
             class="adminboard-select"
-            v.model="gameMode"
-            @change="onGameModeChange"
+            v-model="gameMode" @change="onGameModeChange"
             :disabled="isGameActive"
           >
             <option value="Freefall">FreeFall</option>
@@ -291,7 +289,6 @@ export default {
           return;
         }
 
-        // backend wraps user array in data.data
         const users = Array.isArray(data.data) ? data.data : [];
         console.log("[fetchAllUsers] extracted users:", users);
 
@@ -328,28 +325,24 @@ export default {
 
 <style>
 .page-container {
-  position: fixed;       
-  top: 5%;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;      
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto;      
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding: 2rem 0;       
+}
+
+.adminboard-page {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 </style>
 
 <style scoped>
-  .adminboard-page {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh; 
-    width: 100%;
-    background: none;
-  }
-
   .adminboard-container {
     width: 55%;
     max-width: 800px;
