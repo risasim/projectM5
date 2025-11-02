@@ -111,7 +111,7 @@ export default {
   },
   methods: {
     checkAuthStatus() {
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       this.isAuthenticated = !!token;
     },
     toggleSettingsOverlay() {
@@ -131,7 +131,7 @@ export default {
         this.showSettingsOverlay = true; 
     },
     confirmLogout() {
-      localStorage.clear();
+      sessionStorage.clear();
       this.isAuthenticated = false;
       this.showSettingsOverlay = false; 
       this.showLogoutConfirmation = false; 
@@ -150,7 +150,7 @@ export default {
     },
 
     async confirmDeleteAccount() {
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       if (!token) {
         alert('You are not logged in.');
         this.showDeleteConfirmation = false;
@@ -169,7 +169,7 @@ export default {
 
         if (res.ok) {
           alert('Account successfully deleted. Goodbye!');
-          localStorage.clear();
+          sessionStorage.clear();
           this.isAuthenticated = false;
           this.showSettingsOverlay = false;
           this.showDeleteConfirmation = false;
