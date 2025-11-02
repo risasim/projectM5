@@ -160,7 +160,7 @@ export default {
       }
 
       try {
-        const res = await fetch('/api/user', { 
+        const res = await fetch('/api/api/user', { 
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`, 
