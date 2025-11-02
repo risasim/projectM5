@@ -68,7 +68,7 @@ export default {
   data() {
     return {
       message: '',
-      gameMode: 'Freefall',
+      gameMode: sessionStorage.getItem('selectedGameMode') || 'Freefall',
       players: [],
       isGameActive: false,
       serverGameStatus: 'Idle',
@@ -77,7 +77,7 @@ export default {
   },
   methods: {
     getAuthToken() {
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       console.log('[getAuthToken] token:', token);
       if (!token) {
         alert('You must log in first.');
@@ -92,6 +92,7 @@ export default {
       console.log('[onGameModeChange] triggered, current gameMode:', this.gameMode, 'isGameActive:', this.isGameActive);
       if (this.isGameActive) return;
       this.message = `Game mode changed to ${this.gameMode}`;
+      sessionStorage.setItem('selectedGameMode', this.gameMode);
     },
 
     async getGameStatus() {
