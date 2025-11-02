@@ -70,7 +70,7 @@ export default {
             return;
         }
         try {
-            const res = await fetch('/api/api/gameStatus', {
+            const res = await fetch('/api/gameStatus', {
                 method: 'GET',
                 headers: { Authorization: `Bearer ${token}` }
             });

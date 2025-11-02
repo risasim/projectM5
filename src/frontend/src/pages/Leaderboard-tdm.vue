@@ -78,7 +78,7 @@ export default {
             return;
         }
         try {
-            const res = await fetch('/api/api/gameStatus', {
+            const res = await fetch('/api/gameStatus', {
                 method: 'GET',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -137,7 +137,7 @@ export default {
 
     connectLeaderboard() {
       const token = localStorage.getItem("authToken");
-      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard?token=${token}`;
+      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard`;
       this.websocket = new WebSocket(websocketURL);
 
       this.websocket.onopen = () => {

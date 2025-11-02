@@ -48,7 +48,7 @@ export default {
 
       try {
         // get the token
-        const response = await fetch('/api/api/auth', {
+        const response = await fetch('/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

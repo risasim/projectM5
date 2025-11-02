@@ -159,7 +159,7 @@ export default {
       const token = this.getToken();
       if (!token) return;
       try {
-        const response = await fetch('/api/api/gameStatus', {
+        const response = await fetch('/api/gameStatus', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();

@@ -154,7 +154,7 @@ export default {
             return;
         }
         try {
-            const res = await fetch('/api/api/gameStatus', {
+            const res = await fetch('/api/gameStatus', {
                 method: 'GET',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -227,7 +227,7 @@ export default {
       }
 
       try {
-          const base = '/api/api/sound';
+          const base = '/api/sound';
           let url;
             if (cacheBust) {
             if (base.includes('?')) {
@@ -312,7 +312,7 @@ export default {
 
       this.uploading = true;
       try {
-        const res = await fetch(`/api/api/uploadSound`, { 
+        const res = await fetch(`/api/uploadSound`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData
@@ -393,7 +393,7 @@ export default {
       if (!token) { this.hasSound = false; return; }
 
       try {
-        const res = await fetch('/api/api/sound', { 
+        const res = await fetch('/api/sound', {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -423,7 +423,7 @@ export default {
       }
       
       try {
-        const res = await fetch('/api/api/joinGame', { 
+        const res = await fetch('/api/joinGame', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });
