@@ -48,11 +48,11 @@ export default {
   data() {
     return {
       isAdmin: false, 
-      selectedGameMode: localStorage.getItem("selectedGameMode") || "FreeFall" //default FFA
+      selectedGameMode: sessionStorage.getItem("selectedGameMode") || "FreeFall" //default FFA
     };
   },
   mounted() {
-    const token = localStorage.getItem("authToken");
+    const token = sessionStorage.getItem("authToken");
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));

@@ -67,9 +67,9 @@ export default {
 
         // store token
         if (!data.token) throw new Error('No token returned from server')
-        localStorage.setItem('authToken', data.token)    
-        localStorage.setItem('userRole', data.role)
-        localStorage.setItem('username', user.value)
+        sessionStorage.setItem('authToken', data.token)
+        sessionStorage.setItem('userRole', data.role)
+        sessionStorage.setItem('username', user.value)
 
         // route according to role
         if (data.role === 'admin') {

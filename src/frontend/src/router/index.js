@@ -67,8 +67,8 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('authToken')
-  const role = localStorage.getItem('userRole')
+  const token = sessionStorage.getItem('authToken')
+  const role = sessionStorage.getItem('userRole')
 
   // routes that require a user to be logged in
   const protectedRoutes = ['/userboard']
