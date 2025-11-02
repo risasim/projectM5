@@ -129,7 +129,7 @@ export default {
 
     connectLeaderboard() {
       const token = localStorage.getItem("authToken");
-      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard`;
+      const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard?token=${token}`;
       this.websocket = new WebSocket(websocketURL);
 
       this.websocket.onopen = () => {
