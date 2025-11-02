@@ -8,8 +8,12 @@
 
         <div class="userboard-top">
           <div class="user-info">
-            <h2 class="username">Username: <span class="value">{{ username }}</span></h2>
-            <p class="team">Team: <span class="value team">{{ team }}</span></p>
+            <h2 class="username">
+              Username: <span class="value">{{ username }}</span>
+            </h2>
+            <p class="team">
+              Team: <span class="value team">{{ team }}</span>
+            </p>
           </div>
 
           <router-link to="/leaderboard">
@@ -22,7 +26,6 @@
           <p>Total Deaths: <span class="value">{{ deaths }}</span></p>
         </div>
 
-        <!-- SFX section -->
         <div class="sfx-section">
           <label for="deathSfx" class="sfx-label">Custom Death SFX:</label>
 
@@ -57,10 +60,26 @@
         </div>
 
         <div class="session-status">
-          <p>Session status: <span :class="['status', sessionStatus]">{{ sessionStatusText }}</span></p>
+          <p>
+            Session status:
+            <span :class="['status', sessionStatus]">{{ sessionStatusText }}</span>
+          </p>
+
+          <p style="margin-top:0.5rem;">
+            Your status:
+            <strong style="margin-left:0.5rem;">
+              <span v-if="joined">Joined</span>
+              <span v-else>Not joined</span>
+            </strong>
+          </p>
         </div>
 
-        <button class="enter-session-btn" @click="enterSession">Enter current game session</button>
+        <button
+          class="enter-session-btn"
+          @click= "enterSession()"
+        >
+          <span>Enter current game session</span>
+        </button>
       </div>
     </div>
   </div>
@@ -75,66 +94,205 @@ export default {
       team: 'Unknown',
       victories: 0,
       deaths: 0,
-      sessionStatus: 'waiting',
+      serverGameStatus: 'Idle', 
+      isUserJoined: false, 
+      gameStatusPolling: null, 
       selectedFile: null,
-      uploading: false,
-      playing: false,
-      hasSound: false,
+      previewUrl: null,
       audioObjectUrl: null,
-      previewUrl: null
+      hasSound: false, 	
+      uploading: false,
+      playing: false
     };
   },
+
   computed: {
+    joined() {
+        return this.isUserJoined; 
+    },
+    sessionStatus() {
+      if (this.serverGameStatus === 'Started') return 'active';
+      if (this.serverGameStatus === 'Created') return 'waiting';
+      return 'inactive'; 
+    },
     sessionStatusText() {
-      if (this.sessionStatus === 'active') return 'Active';
-      if (this.sessionStatus === 'waiting') return 'Waiting for players';
-      return 'Inactive';
+      if (this.serverGameStatus === 'Started') return 'Game is currently running... Wait for it to finish before joining.';
+      if (this.serverGameStatus === 'Created') return 'Waiting for players, Join!';
+      if (this.serverGameStatus === 'Idle') return 'No game created. Waiting for a host.';
+      return 'Server currently inactive or unknown state';
     }
+
   },
+
   mounted() {
     this.checkHasSound();
+    this.gameStatusPolling = setInterval(this.getGameStatus, 2500); 
+    this.getGameStatus(); 
   },
+
   beforeUnmount() {
-    if (this.audioObjectUrl) URL.revokeObjectURL(this.audioObjectUrl);
-    if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+    if (this.gameStatusPolling) {
+        clearInterval(this.gameStatusPolling);
+    }
+    
+    if (this.audioObjectUrl) {
+      URL.revokeObjectURL(this.audioObjectUrl);
+      this.audioObjectUrl = null;
+    }
+    if (this.previewUrl) {
+      URL.revokeObjectURL(this.previewUrl);
+      this.previewUrl = null;
+    }
   },
+
   methods: {
+    async getGameStatus() {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
+            this.serverGameStatus = 'Inactive';
+            return;
+        }
+        try {
+            const res = await fetch('/api/gameStatus', {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.status === 401) {
+                console.warn('[GameStatus] Token expired, stopping polling.');
+                this.serverGameStatus = 'Inactive'; 
+                clearInterval(this.gameStatusPolling);
+                this.gameStatusPolling = null;
+                return;
+            }
+
+            const data = await res.json().catch(() => ({}));
+            
+            if (res.ok && data.status === 'success') {
+                const rawStatus = data.Game_Status;
+                
+                if (typeof rawStatus === 'string' && rawStatus.length > 0) {
+                    const lowerStatus = rawStatus.toLowerCase();
+                    const newStatus = lowerStatus.charAt(0).toUpperCase() + lowerStatus.slice(1);
+                    
+                    const oldStatus = this.serverGameStatus; 
+
+                    this.serverGameStatus = newStatus;
+                    console.log(`[GameStatus] Server returned: ${rawStatus}. Client status set to: ${this.serverGameStatus}`);
+
+                   if (this.serverGameStatus === 'Idle' && oldStatus !== 'Idle') {
+                        console.info('[GameStatus] Game ended, resetting user joined status.');
+                        this.isUserJoined = false; 
+                    }
+
+                } else {
+                    console.warn('[GameStatus] Server response missing or invalid Game_Status:', rawStatus);
+                    this.serverGameStatus = 'Idle'; 
+                }
+
+            } else {
+                console.warn('[GameStatus] Failed (non-success response):', data.error || data.message || res.statusText);
+                this.serverGameStatus = 'Inactive';
+            }
+        } catch (err) {
+            console.error('[GameStatus] Poll failed (network error):', err);
+            this.serverGameStatus = 'Inactive'; 
+        }
+    },
+
     onFileSelected(e) {
       this.selectedFile = e.target.files[0] || null;
       console.log('Selected file:', this.selectedFile && this.selectedFile.name);
+
       if (this.previewUrl) {
         URL.revokeObjectURL(this.previewUrl);
         this.previewUrl = null;
       }
       if (this.selectedFile) {
-        this.previewUrl = URL.createObjectURL(this.selectedFile);
+        try {
+          this.previewUrl = URL.createObjectURL(this.selectedFile);
+        } catch (err) {
+          console.warn('Could not create preview URL', err);
+          this.previewUrl = null;
+        }
       }
-    },  async fetchSoundFromServer() {
-  const token = localStorage.getItem('authToken');
-  if (!token) return;
+    },
 
-  try {
-    const res = await fetch('/api/api/sound', {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    async fetchSoundFromServer({ cacheBust = true } = {}) {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.warn('No token for fetchSoundFromServer');
+        return;
+      }
 
-    if (!res.ok) {
-      console.warn('No uploaded sound found.');
-      this.hasSound = false;
-      return;
-    }
+      try {
+          const base = '/api/sound';
+          let url;
+            if (cacheBust) {
+            if (base.includes('?')) {
+              url = base + '&cb=' + Date.now();
+            } else {
+              url = base + '?cb=' + Date.now();
+            }
+            } else {
+              url = base;
+            }
 
-    const blob = await res.blob();
-    if (this.audioObjectUrl) URL.revokeObjectURL(this.audioObjectUrl);
-    this.audioObjectUrl = URL.createObjectURL(blob);
-    this.hasSound = true;
-    console.log('Fetched uploaded sound successfully!');
-  } catch (err) {
-    console.error('Failed to fetch sound:', err);
-    this.hasSound = false;
-  }
-},
+        console.info('[fetchSoundFromServer] requesting', url);
+
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store'
+        });
+
+        console.info('[fetchSoundFromServer] response status:', res.status, res.statusText);
+
+        try {
+          console.info(
+            '[fetchSoundFromServer] headers:',
+            'cache-control=', res.headers.get('cache-control'),
+            'etag=', res.headers.get('etag'),
+            'last-modified=', res.headers.get('last-modified'),
+            'content-length=', res.headers.get('content-length'),
+            'content-type=', res.headers.get('content-type')
+          );
+        } catch (e) {
+          console.warn('Could not read headers', e);
+        }
+
+        if (!res.ok) {
+          console.warn('[fetchSoundFromServer] server returned non-OK status', res.status);
+          this.hasSound = false;
+
+          if (this.audioObjectUrl) {
+            URL.revokeObjectURL(this.audioObjectUrl);
+            this.audioObjectUrl = null;
+          }
+          return;
+        }
+
+        const blob = await res.blob();
+        console.info('[fetchSoundFromServer] got blob, size bytes =', blob.size);
+
+        if (this.audioObjectUrl) {
+          URL.revokeObjectURL(this.audioObjectUrl);
+          this.audioObjectUrl = null;
+        }
+
+        this.audioObjectUrl = URL.createObjectURL(blob);
+        this.hasSound = true;
+        console.info('[fetchSoundFromServer] cached new audioObjectUrl ->', this.audioObjectUrl);
+      } catch (err) {
+        console.error('[fetchSoundFromServer] failed:', err);
+        this.hasSound = false;
+        if (this.audioObjectUrl) {
+          URL.revokeObjectURL(this.audioObjectUrl);
+          this.audioObjectUrl = null;
+        }
+      }
+    },
 
     async uploadSelected() {
       if (!this.selectedFile) {
@@ -149,13 +307,12 @@ export default {
         return;
       }
 
-      const username = encodeURIComponent(this.username);
       const formData = new FormData();
       formData.append('sound', file);
 
       this.uploading = true;
       try {
-        const res = await fetch(`/api/api/uploadSound`, {
+        const res = await fetch(`/api/uploadSound`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData
@@ -187,11 +344,13 @@ export default {
     },
 
     async playSound() {
-      if (this.playing) return;
+      if (this.playing) {
+        console.info('[playSound] already playing, returning');
+        return;
+      }
       this.playing = true;
 
       try {
-        // play selected local file (preview)
         if (this.selectedFile && this.previewUrl) {
           console.log('Playing local preview:', this.selectedFile.name);
           const audio = new Audio(this.previewUrl);
@@ -204,33 +363,18 @@ export default {
           return;
         }
 
-        // otherwise, play uploaded sound from server
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          alert('You must log in again.');
+
+        await this.fetchSoundFromServer({ cacheBust: true });
+
+        if (!this.audioObjectUrl) {
+          alert('No uploaded sound found (after fetch).');
           this.playing = false;
           return;
         }
 
-        const res = await fetch('/api/api/sound', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        console.info('[playSound] playing from audioObjectUrl:', this.audioObjectUrl);
 
-        if (!res.ok) {
-          if (res.status === 404) {
-            this.hasSound = false;
-            alert('No uploaded sound found.');
-            return;
-          }
-          throw new Error(`Failed to fetch sound: ${res.status}`);
-        }
-
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        this.audioObjectUrl = url;
-
-        const audio = new Audio(url);
+        const audio = new Audio(this.audioObjectUrl);
         audio.onended = () => { this.playing = false; };
         audio.onerror = () => {
           this.playing = false;
@@ -238,8 +382,8 @@ export default {
         };
         await audio.play();
       } catch (err) {
-        console.error('playSound error:', err);
-        alert('Failed to play sound.');
+        console.error('[playSound] error:', err);
+        alert('Failed to play sound. See console for details.');
         this.playing = false;
       }
     },
@@ -249,11 +393,17 @@ export default {
       if (!token) { this.hasSound = false; return; }
 
       try {
-        const res = await fetch('/api/api/sound', {
+        const res = await fetch('/api/sound', {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` }
         });
-        this.hasSound = res.ok;
+
+        if (res.ok) {
+          this.hasSound = true;
+          await this.fetchSoundFromServer();
+        } else {
+          this.hasSound = false;
+        }
       } catch (err) {
         console.warn('checkHasSound failed', err);
         this.hasSound = false;
@@ -267,15 +417,21 @@ export default {
         return;
       }
 
+      if (this.serverGameStatus !== 'Created') {
+          alert(`Cannot join game. Current status is '${this.serverGameStatus}'. You can only join when the status is 'Created'.`);
+          return;
+      }
+      
       try {
         const res = await fetch('/api/joinGame', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json().catch(() => ({}));
+        
         if (res.ok && data.status === 'success') {
           alert('Joined game successfully!');
-          this.sessionStatus = 'active';
+          this.isUserJoined = true; 
         } else {
           const msg = data.error || data.message || `Failed to join (${res.status})`;
           alert(msg);
@@ -311,7 +467,6 @@ export default {
   background: none;
 }
 
-/* keep your original styling; included minimal extras for sfx area */
 .sfx-section {
   display: flex;
   align-items: center;
@@ -354,10 +509,10 @@ export default {
 
 <style>
 .page-container {
-  position: fixed;       
+  position: fixed; 	
   width: 100vw;
   height: 100vh;
-  overflow: hidden;      
+  overflow: hidden; 	 
   display: flex;
   justify-content: center;
   align-items: center;
@@ -365,15 +520,6 @@ export default {
 </style>
 
 <style scoped>
-.userboard-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh; 
-  width: 100%;
-  background: none;
-}
-
 .userboard-container {
   position: relative;
   top: 3%;
@@ -489,11 +635,11 @@ export default {
 }
 
 .status.active {
-  color: green;
+  color: orange;
 }
 
 .status.waiting {
-  color: orange;
+  color: green;
 }
 
 .status.inactive {

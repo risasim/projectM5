@@ -2,9 +2,6 @@ from rpi_hardware_pwm import HardwarePWM
 import time
 
 
-def shootWithInfo():
-    pass
-
 def shoot():
     IR_CARRIER_FREQ = 38000
     DUTY_CYCLE = 50
@@ -23,8 +20,3 @@ def shoot():
             pwm.stop()
             print("stopped sending")
 
-
-if __name__ == "__main__":
-    while True:
-        print("shooting")
-        shoot()

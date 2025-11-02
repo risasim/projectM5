@@ -4,7 +4,7 @@ import os
 import signal 
 current_process = None
 
-def playSound(filename):
+def playSound(filepath):
     
     global current_process
     
@@ -20,17 +20,17 @@ def playSound(filename):
             print(f"error: \n {e}")
     
     current_process = None
-    
-    path = "/home/marciano/Downloads"
-    fullpath = os.path.join(path, filename)
-    if not os.path.exists(fullpath):
+    print(type(filepath))
+    if filepath == None:
+        return False
+    if not os.path.exists(filepath):
         print("filepath does not exist")
         # need to download the file 
         # maybe default to a random downloaded file 
         return False
 
     try:
-        process = subprocess.Popen(['cvlc', '--play-and-exit', fullpath],
+        process = subprocess.Popen(['cvlc', '--play-and-exit', filepath],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
         
@@ -41,9 +41,3 @@ def playSound(filename):
     except Exception as e:
         print(f"ERROR: there is an error namely \n {e}")
         
-        
-def mmain():
-    playSound("7NA.mp3")
-    
-
-#main()

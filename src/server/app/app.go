@@ -154,9 +154,11 @@ func (a *App) CreateRoutes() {
 
 	protected.POST("/joinGame", endPointHandler.JoinGame)
 	// For pi
-
-	protected.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
 	protected.GET("/wsPis", a.GameManager.WsPisHandler)
+
+	specialProtection := routes.Group("/api")
+	specialProtection.Use(a.loginHandler.WSQueryAuthMiddleware)
+	specialProtection.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
 
 	distPath := "./web"
 	routes.Static("/assets", distPath+"/assets")

@@ -1,11 +1,8 @@
 from gpiozero import LED
 import time
 
-greenPin = 23
-redPin = 24
-
-green_led = LED(greenPin)
-red_led = LED(redPin)
+green_led = LED(23)
+red_led = LED(24)
 
 
 def changecolor(color):
@@ -21,15 +18,3 @@ def changecolor(color):
     if (color == "NONE"):
         red_led.off()
         green_led.off()
-
-
-
-def glmain():
-    while(True):
-        changecolor("GREEN")
-        time.sleep(2)
-        changecolor("ORANGE")
-        time.sleep(2)
-        changecolor("RED")
-        time.sleep(2)
-        

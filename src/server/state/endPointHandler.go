@@ -125,6 +125,7 @@ func (e EndPointHandler) GetSound(c *gin.Context) {
 	c.File(filePath)
 }
 
+// GetGameStatus returns the status of the game
 func (e EndPointHandler) GetGameStatus(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "success", "Game_Status": e.GameManager.GameStatus.String()})
 }
@@ -133,6 +134,7 @@ type StartGameRequest struct {
 	GameType communication.GameType `json:"game_type"`
 }
 
+// CreateGame does replce the current game with a new one, if the current one is not running
 func (e EndPointHandler) CreateGame(c *gin.Context) {
 	var req StartGameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
