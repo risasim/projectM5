@@ -144,6 +144,9 @@ func (gm *GameManager) AddPlayer(player Player) error {
 func (gm *GameManager) SessionPlayers() []string {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
+	if gm.CurrentSession.Player != nil || len(gm.CurrentSession.Player) == 0 {
+		return []string{}
+	}
 	usernames := make([]string, len(gm.CurrentSession.Player))
 	for i, p := range gm.CurrentSession.Player {
 		usernames[i] = p.Username
