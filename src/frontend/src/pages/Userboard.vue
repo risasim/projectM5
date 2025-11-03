@@ -90,7 +90,7 @@ export default {
   name: 'UserBoard',
   data() {
     return {
-      username: localStorage.getItem('username') || 'Unknown',
+      username: sessionStorage.getItem('username') || 'Unknown',
       team: 'Unknown',
       victories: 0,
       deaths: 0,
@@ -147,7 +147,7 @@ export default {
 
   methods: {
     async getGameStatus() {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
             console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
             this.serverGameStatus = 'Inactive';
@@ -220,7 +220,7 @@ export default {
     },
 
     async fetchSoundFromServer({ cacheBust = true } = {}) {
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       if (!token) {
         console.warn('No token for fetchSoundFromServer');
         return;
@@ -301,7 +301,7 @@ export default {
       }
 
       const file = this.selectedFile;
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       if (!token) {
         alert('You must log in again.');
         return;
@@ -389,11 +389,11 @@ export default {
     },
 
     async checkHasSound() {
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       if (!token) { this.hasSound = false; return; }
 
       try {
-        const res = await fetch('/api/sound', {
+        const res = await fetch('/api/sound', { 
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -411,7 +411,7 @@ export default {
     },
 
     async enterSession() {
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       if (!token) {
         alert('You must log in first.');
         return;

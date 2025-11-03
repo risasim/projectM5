@@ -3,15 +3,11 @@
     <div class="adminboard-page">
       <div class="adminboard-container">
         <div class="top-buttons">
-          <div class="left-buttons">
-            <button class="adminboard-btn" @click="$router.push('/adminedit')">
-              Manage Players
-            </button>
-          </div>
-
           <h1 class="adminboard-title">Game Session Settings</h1>
-
-          <button class="adminboard-btn" @click="goToLeaderboard">Leaderboard</button>
+          <div class="button-group">
+            <button class="adminboard-btn" @click="$router.push('/adminadduser')">Add User</button>
+            <button class="adminboard-btn" @click="goToLeaderboard">Leaderboard</button>
+          </div>
         </div>
 
         <div class="gametype-select">
@@ -20,7 +16,8 @@
             id="gametype"
             class="adminboard-select"
             v-model="gameMode"
-            @change="handleGameModeChange"
+            @change="onGameModeChange"
+            :disabled="isGameActive"
           >
             <option value="Freefall">FreeFall</option>
             <option value="Infected">Infected</option>
@@ -40,10 +37,9 @@
             <tr v-for="player in players" :key="player.username">
               <td>{{ player.username }}</td>
               <td>{{ player.team || '-' }}</td>
-              <td :class="player.online ? 'alive' : 'dead'">{{ player.online ? 'Online' : 'Offline' }}</td>
-            </tr>
-            <tr v-if="players.length === 0">
-              <td colspan="3">No players connected yet.</td>
+              <td :class="{ online: player.online, offline: !player.online }">
+                {{ player.online ? 'Online' : 'Offline' }}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -66,16 +62,18 @@ export default {
   data() {
     return {
       message: '',
-      gameMode: 'Freefall',
+      gameMode: sessionStorage.getItem('selectedGameMode') || 'Freefall',
       players: [],
-      websocket: null,
-      gameStatus: 'Idle',
-      statusInterval: null
+      isGameActive: false,
+      serverGameStatus: 'Idle',
+      pollingInterval: null
     };
   },
+
   methods: {
-    getToken() {
-      const token = localStorage.getItem('authToken');
+    getAuthToken() {
+      const token = sessionStorage.getItem('authToken');
+      console.log('[getAuthToken] token:', token);
       if (!token) {
         alert('You must log in first.');
         return null;
@@ -83,29 +81,163 @@ export default {
       return token;
     },
 
+    onGameModeChange() {
+      console.log('[onGameModeChange] triggered:', this.gameMode);
+      if (this.isGameActive) return;
+      this.message = `Game mode changed to ${this.gameMode}`;
+      sessionStorage.setItem('selectedGameMode', this.gameMode);
+    },
+
+    async pollGameStatusAndPlayers() {
+      const token = this.getAuthToken();
+      if (!token) return;
+
+      try {
+        const statusRes = await fetch('/api/api/gameStatus', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        console.log('[pollGameStatusAndPlayers] GameStatus status:', statusRes.status);
+        const statusData = await statusRes.json().catch(() => ({}));
+        console.log('[pollGameStatusAndPlayers] GameStatus data:', statusData);
+
+        if (statusRes.ok && statusData.status === 'success') {
+          const raw = statusData.Game_Status || '';
+          const status = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+          this.serverGameStatus = status;
+          this.isGameActive = (status === 'Created' || status === 'Started');
+        } else {
+          console.warn('[pollGameStatusAndPlayers] Non-success response:', statusData);
+          this.serverGameStatus = 'Idle';
+          this.isGameActive = false;
+        }
+
+        if (this.isGameActive) {
+          console.log('[pollGameStatusAndPlayers] Game active — fetching session players');
+          await this.fetchSessionPlayers();
+        } else {
+          this.players = this.players.map(p => ({ ...p, online: false }));
+        }
+
+      } catch (err) {
+        console.error('[pollGameStatusAndPlayers] Error:', err);
+        this.isGameActive = false;
+      }
+    },
+
+    async fetchAllUsers() {
+      const token = this.getAuthToken();
+      if (!token) return;
+
+      const url = '/api/api/users';
+      console.log('[fetchAllUsers] fetching from:', url);
+
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('[fetchAllUsers] response status:', res.status);
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch (err) {
+          console.error('[fetchAllUsers] JSON parse failed:', err, text);
+          this.message = 'Invalid JSON response from backend';
+          return;
+        }
+
+        const users = Array.isArray(data.data) ? data.data : [];
+        console.log('[fetchAllUsers] users:', users);
+
+        this.players = users.map((u, i) => ({
+          username: u.username || `User#${i}`,
+          team: u.team || '-',
+          online: false
+        }));
+
+        console.log('[fetchAllUsers] players array updated:', this.players);
+      } catch (err) {
+        console.error('[fetchAllUsers] network or exception:', err);
+        this.message = 'Network error while fetching users.';
+      }
+    },
+
+    async fetchSessionPlayers() {
+      const token = this.getAuthToken();
+      if (!token) {
+        return;
+      }
+
+      const url = '/api/api/sessionPlayers';
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include'
+        });
+
+        const text = await res.text();
+        console.log('Raw response:', text.substring(0, 300));
+
+        let data;
+        try { data = JSON.parse(text); }
+        catch (err) {
+          return;
+        }
+
+        if (res.ok && data.status === 'success') {
+          const sessionUsers = new Set(data.Players);
+          this.players = this.players.map(p => ({
+            ...p,
+            online: sessionUsers.has(p.username)
+          }));
+        } else if (res.status === 400 && data.error) {
+          console.warn(data.error);
+          this.players = this.players.map(p => ({ ...p, online: false }));
+          this.isGameActive = false;
+          this.message = data.error;
+        } else if (res.status === 401 || res.status === 403) {
+          this.message = 'Session expired. Please log in again.';
+          this.$router.push('/login');
+        }
+      } catch (err) {
+        this.message = 'Network error while fetching session players.';
+      }
+    },
+
     async createGame() {
-      const token = this.getToken();
+      const token = this.getAuthToken();
       if (!token) return;
       try {
         const response = await fetch('/api/createGame', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ game_type: this.gameMode })
         });
-        const data = await response.json();
-        if (data.status === 'success') {
-          this.message = data.message || 'Game created successfully';
-          alert(this.message);
+
+        console.log('[createGame] response:', res.status);
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && data.status === 'success') {
+          console.log(data);
+          this.message = data.message;
+          this.isGameActive = true;
         } else {
-          this.message = data.error || 'Failed to create game';
-          alert(this.message);
+          console.warn(data);
+          this.message = data.error || 'Failed to create game.';
         }
-      } catch (error) {
-        console.error('Create game error:', error);
-        this.message = 'Network error while creating game.';
+      } catch (err) {
+        console.error(err);
+        this.message = 'Error creating game.';
       }
     },
 
@@ -115,20 +247,15 @@ export default {
       try {
         const response = await fetch('/api/startGame', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const data = await response.json();
-        if (data.status === 'success') {
-          this.message = data.message || 'Game started successfully';
-          alert(this.message);
-          this.connectPisSocket();
-        } else {
-          this.message = data.error || 'Failed to start game';
-          alert(this.message);
-        }
-      } catch (error) {
-        console.error('Start game error:', error);
-        this.message = 'Network error while starting game.';
+        const data = await res.json();
+        console.log('[startGame] response:', data);
+
+        this.message = data.message || 'Game started';
+      } catch (err) {
+        console.error('[startGame] error:', err);
+        this.message = 'Error starting game';
       }
     },
 
@@ -138,20 +265,17 @@ export default {
       try {
         const response = await fetch('/api/stopGame', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const data = await response.json();
-        if (data.status === 'success') {
-          this.message = data.message || 'Game stopped successfully';
-          alert(this.message);
-          this.disconnectPisSocket();
-        } else {
-          this.message = data.error || 'Failed to stop game';
-          alert(this.message);
-        }
-      } catch (error) {
-        console.error('Stop game error:', error);
-        this.message = 'Network error while stopping game.';
+        const data = await res.json();
+        console.log('[stopGame] response:', data);
+
+        this.message = data.message || 'Game stopped.';
+        this.isGameActive = false;
+        this.players = this.players.map(p => ({ ...p, online: false }));
+      } catch (err) {
+        console.error('[stopGame] error:', err);
+        this.message = 'Error stopping game.';
       }
     },
 
@@ -220,46 +344,42 @@ export default {
         Infected: '/leaderboard-inf',
         TeamDeathmatch: '/leaderboard-tdm'
       };
-      this.$router.push(map[this.gameMode]);
+      this.$router.push(routes[this.gameMode]);
     }
   },
 
   mounted() {
-    this.pollGameStatus();
-    this.statusInterval = setInterval(this.pollGameStatus, 3000);
+    console.log('[mounted] AdminBoard mounted');
+    this.fetchAllUsers();
+    this.pollGameStatusAndPlayers();
+    this.pollingInterval = setInterval(this.pollGameStatusAndPlayers, 2500);
   },
 
   beforeUnmount() {
-    clearInterval(this.statusInterval);
-    this.disconnectPisSocket();
+    if (this.pollingInterval) clearInterval(this.pollingInterval);
   }
 };
 </script>
 
 <style>
 .page-container {
-  position: fixed;       
-  top: 5%;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;      
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding: 2rem 0;
+}
+.adminboard-page {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 </style>
 
 <style scoped>
-  .adminboard-page {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh; 
-    width: 100%;
-    background: none;
-  }
-
   .adminboard-container {
     width: 55%;
     max-width: 800px;
@@ -411,6 +531,16 @@ export default {
   .end-session:hover {
     background-color: #b02a37;
     transform: translateY(-0.2vw);
+  }
+
+  .online { 
+    color: green; 
+    font-weight: bold; 
+  }
+  
+  .offline { 
+    color: red; 
+    font-weight: bold; 
   }
 
   .end-session:active { 

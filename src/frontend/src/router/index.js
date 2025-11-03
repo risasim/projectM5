@@ -7,7 +7,8 @@ import Leaderboard from '@/pages/Leaderboard.vue'
 import LeaderboardFFA from '@/pages/Leaderboard-ffa.vue'
 import LeaderboardTDM from '@/pages/Leaderboard-tdm.vue'
 import LeaderboardINF from '@/pages/Leaderboard-inf.vue'
-import AdminEdit from '@/pages/AdminEdit.vue'
+import Adminadduser from '@/pages/Adminadduser.vue'
+import { components } from 'vue-range-slider'
 
 
 const routes = [
@@ -54,9 +55,9 @@ const routes = [
     component: LeaderboardINF
   },
   {
-    path: '/adminedit',
-    name:'AdminEdit',
-    component: AdminEdit
+    path: '/adminadduser',
+    name: Adminadduser,
+    component: Adminadduser
   }
 ]
 
@@ -66,14 +67,14 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('authToken')
-  const role = localStorage.getItem('userRole')
+  const token = sessionStorage.getItem('authToken')
+  const role = sessionStorage.getItem('userRole')
 
   // routes that require a user to be logged in
   const protectedRoutes = ['/userboard']
 
   // routes that require admin access
-  const adminRoutes = ['/adminboard', '/adminedit']
+  const adminRoutes = ['/adminboard']
 
   // not logged in
   if (!token && protectedRoutes.includes(to.path)) {

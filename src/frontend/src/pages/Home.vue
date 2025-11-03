@@ -48,11 +48,11 @@ export default {
   data() {
     return {
       isAdmin: false, 
-      selectedGameMode: localStorage.getItem("selectedGameMode") || "FreeFall" //default FFA
+      selectedGameMode: sessionStorage.getItem("selectedGameMode") || "FreeFall" //default FFA
     };
   },
   mounted() {
-    const token = localStorage.getItem("authToken");
+    const token = sessionStorage.getItem("authToken");
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -71,18 +71,8 @@ export default {
       }
     },
     goToLeaderboard() {
-      // will be replaced with live socket logic, placeholder
-      const gameMode = this.selectedGameMode;
-      if (gameMode === 'FreeFall') {
-        this.$router.push('/leaderboard-ffa');
-      } else if (gameMode === 'Infected') {
-        this.$router.push('/leaderboard-inf');
-      } else if (gameMode === 'Team Deathmatch') {
-        this.$router.push('/leaderboard-tdm');
-      } else {
-        this.$router.push('/leaderboard');
-      }
-    }
+    this.$router.push('/leaderboard');
+  }
   }
 };
 </script>
