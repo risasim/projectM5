@@ -67,23 +67,23 @@ const (
 
 var (
 	MsgType_String = map[uint]string{
-		0: "Auth",
-		1: "Start",
-		2: "HitDataMsg",
-		3: "HitResponseMsg",
-		4: "End",
+		0: "auth",
+		1: "start",
+		2: "hitdatamsg",
+		3: "hitresponsemsg",
+		4: "end",
 	}
 	MsgType_value = map[string]uint{
-		"Auth":           0,
-		"Start":          1,
-		"HitDataMsg":     2,
-		"HitResponseMsg": 3,
-		"End":            4,
+		"auth":           0,
+		"start":          1,
+		"hitdatamsg":     2,
+		"hitresponsemsg": 3,
+		"end":            4,
 	}
 )
 
 func ParseMsgType(msg string) (MsgType, error) {
-	msg = strings.TrimSpace(strings.ToLower(msg))
+	msg = strings.TrimSpace(msg)
 	value, ok := MsgType_value[msg]
 	if !ok {
 		return MsgType(0), fmt.Errorf("invalid msg type: %s", msg)

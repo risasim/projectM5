@@ -335,8 +335,21 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 		}
 
 		// Try to parse as hit data
-		var hitData communication.HitData
+		var hitData communication.Message
 		if err := json.Unmarshal(message, &hitData); err != nil {
+			fmt.Println("Error unmarshalling hit data:", err)
+			// Send error response back to client
+			errorResponse := map[string]string{
+				"error":   "invalid_for",
+				"message": "Could not parse hit data",
+			}
+			responseJSON, _ := json.Marshal(errorResponse)
+			conn.WriteMessage(websocket.TextMessage, responseJSON)
+			continue
+		}
+
+		var hateData communication.HitData
+		if err := json.Unmarshal(hitData.Data, &hateData); err != nil {
 			fmt.Println("Error unmarshalling hit data:", err)
 			// Send error response back to client
 			errorResponse := map[string]string{
@@ -349,7 +362,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 		}
 
 		// Process the hit
-		res := gm.Game.registerHit(hitData)
+		res := gm.Game.registerHit(hateData)
 		gm.updateLeaderBoard()
 
 		responseJSON, err1 := json.Marshal(res)
@@ -369,7 +382,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 			break
 		}
 
-		fmt.Printf("Processed hit from %s\n", hitData.Victim)
+		fmt.Printf("Processed hit from %s\n", hateData.Victim)
 	}
 }
 
