@@ -93,7 +93,7 @@ export default {
       if (!token) return;
 
       try {
-        const statusRes = await fetch('/api/api/gameStatus', {
+        const statusRes = await fetch('/api/gameStatus', {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -130,7 +130,7 @@ export default {
       const token = this.getAuthToken();
       if (!token) return;
 
-      const url = '/api/api/users';
+      const url = '/api/users';
       console.log('[fetchAllUsers] fetching from:', url);
 
       try {

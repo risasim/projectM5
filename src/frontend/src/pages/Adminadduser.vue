@@ -78,7 +78,7 @@ export default {
       }
 
       try {
-        const res = await fetch("/api/api/addUser", {
+        const res = await fetch("/api/addUser", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
