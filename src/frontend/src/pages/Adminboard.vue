@@ -242,7 +242,7 @@ export default {
     },
 
     async startGameSession() {
-      const token = this.getToken();
+      const token = this.getAuthToken();
       if (!token) return;
       try {
         const response = await fetch('/api/startGame', {
@@ -260,7 +260,7 @@ export default {
     },
 
     async endGameSession() {
-      const token = this.getToken();
+      const token = this.getAuthToken();
       if (!token) return;
       try {
         const response = await fetch('/api/stopGame', {
@@ -280,7 +280,7 @@ export default {
     },
 
     async pollGameStatus() {
-      const token = this.getToken();
+      const token = this.getAuthToken();
       if (!token) return;
       try {
         const response = await fetch('/api/gameStatus', {
