@@ -236,6 +236,11 @@ func (gm *GameManager) handleLeaderBoardConnection(conn *websocket.Conn) {
 	}()
 
 	// Listen for messages from leaderboard (usually just pings/pongs)
+	if setupMessage := gm.getLeaderboardMessage(); setupMessage != nil {
+		if err := conn.WriteMessage(websocket.TextMessage, setupMessage); err != nil {
+			fmt.Println("Error writing message:", err)
+		}
+	}
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -370,15 +375,22 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 
 // updateLeaderBoard does send the generated data about the game into the broadcast of the leaderboards
 func (gm *GameManager) updateLeaderBoard() {
+	responseJSON := gm.getLeaderboardMessage()
+	if responseJSON != nil {
+		gm.BroadCastLeaderBoard <- responseJSON
+	}
+}
+
+func (gm *GameManager) getLeaderboardMessage() []byte {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 	update := gm.Game.generateData()
 	responseJSON, err := json.Marshal(update)
 	if err != nil {
 		fmt.Println("Error marshalling response:", err)
-		return
+		return nil
 	}
-	gm.BroadCastLeaderBoard <- responseJSON
+	return responseJSON
 }
 
 // BroadcastPisHandler does broadcast to all pis

@@ -171,6 +171,7 @@ func (e EndPointHandler) StartGame(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Failed to start game", "details": err.Error()})
 		return
 	}
+	e.GameManager.updateLeaderBoard()
 	c.JSON(200, gin.H{"status": "success", "message": "Game started"})
 }
 
