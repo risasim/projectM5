@@ -125,6 +125,7 @@ func (e EndPointHandler) GetSound(c *gin.Context) {
 	c.File(filePath)
 }
 
+// GetGameStatus returns the status of the game
 func (e EndPointHandler) GetGameStatus(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "success", "Game_Status": e.GameManager.GameStatus.String()})
 }
@@ -133,6 +134,7 @@ type StartGameRequest struct {
 	GameType communication.GameType `json:"game_type"`
 }
 
+// CreateGame does replce the current game with a new one, if the current one is not running
 func (e EndPointHandler) CreateGame(c *gin.Context) {
 	var req StartGameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -169,6 +171,7 @@ func (e EndPointHandler) StartGame(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Failed to start game", "details": err.Error()})
 		return
 	}
+	e.GameManager.updateLeaderBoard()
 	c.JSON(200, gin.H{"status": "success", "message": "Game started"})
 }
 
@@ -241,8 +244,17 @@ func (e EndPointHandler) JoinGame(c *gin.Context) {
 	}
 	err = e.GameManager.AddPlayer(player)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "couldn't add player", "details": err.Error()})
+		c.JSON(500, gin.H{"error": "couldn't add Player", "details": err.Error()})
 		return
 	}
 	c.JSON(200, gin.H{"status": "success", "message": "Successfully joined game"})
+}
+
+func (e EndPointHandler) GetSessionPlayers(c *gin.Context) {
+	if e.GameManager.GameStatus == Idle {
+		c.JSON(400, gin.H{"error": "No game has been created"})
+		return
+	}
+	players := e.GameManager.SessionPlayers()
+	c.JSON(200, gin.H{"status": "success", "Players": players})
 }

@@ -128,10 +128,10 @@ func (a *App) InitDatabase() {
 
 func (a *App) CreateRoutes() {
 	routes := gin.Default()
-	routes.POST("/auth", a.loginHandler.Login)
+	routes.POST("/api/auth", a.loginHandler.Login)
 	userController := db.NewUserController(a.DB)
 	endPointHandler := state.NewEndPointHandler(a.UserRepo, a.GameManager)
-	routes.POST("/piAuth", a.loginHandler.PiLogin)
+	routes.POST("/api/piAuth", a.loginHandler.PiLogin)
 
 	protected := routes.Group("/api")
 	protected.Use(a.loginHandler.AuthenticationMiddleware)
@@ -146,6 +146,7 @@ func (a *App) CreateRoutes() {
 	protected.POST("/uploadSound", endPointHandler.UploadSound)
 	protected.GET("/sound", endPointHandler.GetSound)
 	protected.GET("/gameStatus", endPointHandler.GetGameStatus)
+	protected.GET("/sessionPlayers", endPointHandler.GetSessionPlayers)
 	//For admin - add the middleware for checking
 	adminProtected.POST("/createGame", endPointHandler.CreateGame)
 	adminProtected.POST("/startGame", endPointHandler.StartGame)
@@ -154,9 +155,25 @@ func (a *App) CreateRoutes() {
 
 	protected.POST("/joinGame", endPointHandler.JoinGame)
 	// For pi
-
-	protected.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
 	protected.GET("/wsPis", a.GameManager.WsPisHandler)
+
+	specialProtection := routes.Group("/api")
+	specialProtection.Use(a.loginHandler.WSQueryAuthMiddleware)
+	specialProtection.GET("/wsLeaderboard", a.GameManager.WsLeaderBoardHandler)
+
+	distPath := "./web"
+	routes.Static("/assets", distPath+"/assets")
+	routes.StaticFile("/favicon.ico", distPath+"/favicon.ico")
+
+	// NoRoute for non-API routes only
+	routes.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if len(path) >= 4 && path[:4] == "/api" {
+			c.JSON(404, gin.H{"error": "API endpoint not found"})
+		} else {
+			c.File(distPath + "/index.html")
+		}
+	})
 
 	a.Routes = routes
 }

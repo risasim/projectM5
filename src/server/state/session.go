@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/risasim/projectM5/project/src/server/communication"
 )
 
@@ -46,18 +47,19 @@ func NewTeamDeatchMatch(session *Session) *TeamDeathMatch {
 
 // registerHit in freefall does add the user to the death people without reviving
 func (ffl *FreeForAll) registerHit(dt communication.HitData) communication.HitResponse {
-	for i := range ffl.session.player {
-		if ffl.session.player[i].PiSN == dt.Victim {
-			ffl.deadPeople = append(ffl.deadPeople, ffl.session.player[i])
+	for i := range ffl.session.Player {
+		if ffl.session.Player[i].PiSN == dt.Victim {
+			ffl.deadPeople = append(ffl.deadPeople, ffl.session.Player[i])
 			return communication.HitResponse{
 				PlaySound: true,
-				SoundName: ffl.session.player[i].DeathSound,
+				SoundName: ffl.session.Player[i].DeathSound,
 				Dead:      true,
 				Revive:    false,
 				ReviveIn:  0,
 			}
 		}
 	}
+	println("Victim not found")
 	return communication.HitResponse{}
 }
 
@@ -74,8 +76,8 @@ func (ffl *FreeForAll) generateData() communication.LeaderboardMessage {
 		DeadPlayers: dead,
 	}
 
-	players := make([]communication.LeaderboardPlayer, len(ffl.session.player))
-	for i, player := range ffl.session.player {
+	players := make([]communication.LeaderboardPlayer, len(ffl.session.Player))
+	for i, player := range ffl.session.Player {
 		players[i] = communication.LeaderboardPlayer{
 			Username: player.Username,
 		}
@@ -94,9 +96,9 @@ func (ffl *FreeForAll) generateData() communication.LeaderboardMessage {
 	return res
 }
 
-// finished returns true if the array length of dead people matches the array length of the player array in the session
+// finished returns true if the array length of dead people matches the array length of the Player array in the session
 func (ffl *FreeForAll) finished() bool {
-	return len(ffl.deadPeople) == len(ffl.session.player)
+	return len(ffl.deadPeople) == len(ffl.session.Player)
 }
 
 // TeamDeathMatch is a GameMode where players in teams compete to eliminate each-other for 30 minutes
@@ -114,17 +116,18 @@ type TeamDeathMatch struct {
 
 func (tdm *TeamDeathMatch) registerHit(dt communication.HitData) communication.HitResponse {
 	tdm.divisions[dt.Victim].score -= 100
-	for i := range tdm.session.player {
-		if tdm.session.player[i].PiSN == dt.Victim {
+	for i := range tdm.session.Player {
+		if tdm.session.Player[i].PiSN == dt.Victim {
 			return communication.HitResponse{
 				PlaySound: true,
-				SoundName: tdm.session.player[i].DeathSound,
+				SoundName: tdm.session.Player[i].DeathSound,
 				Dead:      true,
 				Revive:    true,
 				ReviveIn:  30,
 			}
 		}
 	}
+	println("Victim not found")
 	return communication.HitResponse{}
 }
 
@@ -150,8 +153,8 @@ func (tdm *TeamDeathMatch) generateData() communication.LeaderboardMessage {
 		Teams: teams,
 	}
 
-	players := make([]communication.LeaderboardPlayer, len(tdm.session.player))
-	for i, player := range tdm.session.player {
+	players := make([]communication.LeaderboardPlayer, len(tdm.session.Player))
+	for i, player := range tdm.session.Player {
 		players[i] = communication.LeaderboardPlayer{
 			Username: player.Username,
 		}
@@ -195,11 +198,11 @@ func (tdm *TeamDeathMatch) startGame(sess *Session) {
 		name:    "mittens",
 		members: make([]Player, 0),
 	}
-	for i := range tdm.session.player {
+	for i := range tdm.session.Player {
 		if i%2 == 0 {
-			team1.members = append(team1.members, tdm.session.player[i])
+			team1.members = append(team1.members, tdm.session.Player[i])
 		} else {
-			team2.members = append(team2.members, tdm.session.player[i])
+			team2.members = append(team2.members, tdm.session.Player[i])
 		}
 	}
 }
@@ -246,31 +249,31 @@ func (inf *Infected) generateData() []Player {
 	return inf.infectedPeople
 }
 
-// finished returns true if the array length of infected people matches the array length of the player array in the session
+// finished returns true if the array length of infected people matches the array length of the Player array in the session
 func (inf *Infected) finished() bool {
-	return len(inf.infectedPeople) == len(inf.session.player)
+	return len(inf.infectedPeople) == len(inf.session.Player)
 }
 
 // Session does hold the common
 type Session struct {
-	player   []Player
+	Player   []Player
 	hitData  []communication.HitData
 	GameType communication.GameType
 }
 
 func NewSession() *Session {
 	return &Session{
-		player:   make([]Player, 0),
+		Player:   make([]Player, 0),
 		hitData:  make([]communication.HitData, 0),
 		GameType: communication.Freefall,
 	}
 }
 
-// Holds basic player information
+// Holds basic Player information
 type Player struct {
 	// Username is the unique name of the user
 	Username string
-	// ID is the unique integer of the player
+	// ID is the unique integer of the Player
 	PiSN string
 	// DeathSound is the name of the file that needs to add
 	DeathSound string

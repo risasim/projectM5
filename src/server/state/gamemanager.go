@@ -65,7 +65,7 @@ func (gm *GameManager) CreateNewGame(gameType communication.GameType) error {
 
 	// Initialise a new game session
 	gm.CurrentSession = &Session{
-		player:   []Player{},
+		Player:   []Player{},
 		hitData:  []communication.HitData{},
 		GameType: gameType,
 	}
@@ -81,11 +81,19 @@ func (gm *GameManager) StartGame() error {
 	gm.GameStatus = Started
 	gm.Game.startGame(gm.CurrentSession)
 	startMessage := communication.StartedMessage{At: time.Now(), Active: true}
+	if gm.CurrentSession.GameType == communication.Infected {
+		startMessage = communication.StartedMessage{At: time.Now(), Active: false}
+	}
 	jsonData, err := json.Marshal(startMessage)
 	if err != nil {
 		return fmt.Errorf("json messud up innit")
 	}
-	gm.BroadcastPis <- jsonData
+	message := communication.Message{MsgType: communication.Start, Data: jsonData}
+	jsonData2, err2 := json.Marshal(message)
+	if err2 != nil {
+		return fmt.Errorf("json messud up innit")
+	}
+	gm.BroadcastPis <- jsonData2
 	return nil
 }
 
@@ -98,14 +106,19 @@ func (gm *GameManager) EndGame() error {
 	endMessage := communication.EndedMessage{At: time.Now()}
 	jsonData, err := json.Marshal(endMessage)
 	if err != nil {
-		return fmt.Errorf("json fuckup")
+		return fmt.Errorf("json messud up innit")
 	}
-	gm.BroadcastPis <- jsonData
+	message := communication.Message{MsgType: communication.End, Data: jsonData}
+	jsonData2, err2 := json.Marshal(message)
+	if err2 != nil {
+		return fmt.Errorf("json messud up innit")
+	}
+	gm.BroadcastPis <- jsonData2
 	fmt.Println("Game ended")
 	return nil
 }
 
-// AddPlayer to add a player to the current game session
+// AddPlayer to add a Player to the current game session
 func (gm *GameManager) AddPlayer(player Player) error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
@@ -117,28 +130,41 @@ func (gm *GameManager) AddPlayer(player Player) error {
 		return fmt.Errorf("a game has already started")
 	}
 
-	// Checking if a player is already in the game session
-	for _, p := range gm.CurrentSession.player {
+	// Checking if a Player is already in the game session
+	for _, p := range gm.CurrentSession.Player {
 		if p.PiSN == player.PiSN {
-			return fmt.Errorf("a player with this ID is already in the game")
+			return fmt.Errorf("a Player with this ID is already in the game")
 		}
 	}
 
-	gm.CurrentSession.player = append(gm.CurrentSession.player, player)
+	gm.CurrentSession.Player = append(gm.CurrentSession.Player, player)
 	return nil
 }
 
-// RemovePlayer to remove a player from the current game session
+func (gm *GameManager) SessionPlayers() []string {
+	gm.Mutex.Lock()
+	defer gm.Mutex.Unlock()
+	if gm.CurrentSession.Player == nil || len(gm.CurrentSession.Player) == 0 {
+		return []string{}
+	}
+	usernames := make([]string, len(gm.CurrentSession.Player))
+	for i, p := range gm.CurrentSession.Player {
+		usernames[i] = p.Username
+	}
+	return usernames
+}
+
+// RemovePlayer to remove a Player from the current game session
 func (gm *GameManager) RemovePlayer(player Player) error {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
-	for i, p := range gm.CurrentSession.player {
+	for i, p := range gm.CurrentSession.Player {
 		if p.PiSN == player.PiSN {
-			gm.CurrentSession.player = append(gm.CurrentSession.player[:i], gm.CurrentSession.player[i+1:]...)
+			gm.CurrentSession.Player = append(gm.CurrentSession.Player[:i], gm.CurrentSession.Player[i+1:]...)
 			return nil
 		}
 	}
-	return fmt.Errorf("error trying to remove player with this ID")
+	return fmt.Errorf("error trying to remove Player with this ID")
 }
 
 func (gm *GameManager) WsPisHandler(c *gin.Context) {
@@ -182,7 +208,6 @@ func (gm *GameManager) handleLeaderBoardConnection(conn *websocket.Conn) {
 	// Set read deadline and pong handler for keepalive
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
-		fmt.Println("Received pong from leaderboard client")
 		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
@@ -201,18 +226,21 @@ func (gm *GameManager) handleLeaderBoardConnection(conn *websocket.Conn) {
 			select {
 			case <-ticker.C:
 				if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
-					fmt.Println("Error sending ping to leaderboard:", err)
 					return
 				}
 				//fmt.Println("Sent ping to leaderboard client")
 			case <-done:
-				fmt.Println("Stopping leaderboard ping sender")
 				return
 			}
 		}
 	}()
 
 	// Listen for messages from leaderboard (usually just pings/pongs)
+	if setupMessage := gm.getLeaderboardMessage(); setupMessage != nil {
+		if err := conn.WriteMessage(websocket.TextMessage, setupMessage); err != nil {
+			fmt.Println("Error writing message:", err)
+		}
+	}
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -252,7 +280,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 	// Set read deadline and pong handler for keepalive
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
-		fmt.Println("Received pong from client")
+		//fmt.Println("Received pong from client")
 		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
@@ -274,7 +302,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 					fmt.Println("Error sending ping:", err)
 					return
 				}
-				fmt.Println("Sent ping to client")
+				//fmt.Println("Sent ping to client")
 			case <-done:
 				fmt.Println("Stopping Pi ping sender")
 				return
@@ -299,7 +327,7 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 		var genericMsg GenericMessage
 		if err := json.Unmarshal(message, &genericMsg); err == nil {
 			if genericMsg.Type == "ping" {
-				fmt.Println("Received keepalive ping from client")
+				//fmt.Println("Received keepalive ping from client")
 				// Reset read deadline on ping
 				conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 				continue // Skip processing pings as hit data
@@ -322,14 +350,21 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 
 		// Process the hit
 		res := gm.Game.registerHit(hitData)
+		gm.updateLeaderBoard()
 
-		responseJSON, err := json.Marshal(res)
-		if err != nil {
-			fmt.Println("Error marshalling response:", err)
+		responseJSON, err1 := json.Marshal(res)
+		if err1 != nil {
+			fmt.Println("Error marshalling response:", err1)
+			continue
+		}
+		message1 := communication.Message{MsgType: communication.HitResponseMsg, Data: responseJSON}
+		jsonData2, err2 := json.Marshal(message1)
+		if err2 != nil {
+			fmt.Println("Error marshalling response:", err2)
 			continue
 		}
 
-		if err := conn.WriteMessage(websocket.TextMessage, responseJSON); err != nil {
+		if err := conn.WriteMessage(websocket.TextMessage, jsonData2); err != nil {
 			fmt.Println("Error writing message:", err)
 			break
 		}
@@ -340,15 +375,22 @@ func (gm *GameManager) handlePiConnection(conn *websocket.Conn) {
 
 // updateLeaderBoard does send the generated data about the game into the broadcast of the leaderboards
 func (gm *GameManager) updateLeaderBoard() {
+	responseJSON := gm.getLeaderboardMessage()
+	if responseJSON != nil {
+		gm.BroadCastLeaderBoard <- responseJSON
+	}
+}
+
+func (gm *GameManager) getLeaderboardMessage() []byte {
 	gm.Mutex.Lock()
 	defer gm.Mutex.Unlock()
 	update := gm.Game.generateData()
 	responseJSON, err := json.Marshal(update)
 	if err != nil {
 		fmt.Println("Error marshalling response:", err)
-		return
+		return nil
 	}
-	gm.BroadCastLeaderBoard <- responseJSON
+	return responseJSON
 }
 
 // BroadcastPisHandler does broadcast to all pis

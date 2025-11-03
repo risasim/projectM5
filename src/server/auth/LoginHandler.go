@@ -194,3 +194,34 @@ func (h *LoginHandler) AuthenticationMiddleware(c *gin.Context) {
 
 	c.Next()
 }
+
+func (h *LoginHandler) WSQueryAuthMiddleware(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+
+	var tokenString string
+	if authHeader != "" {
+		parts := strings.Split(authHeader, "Bearer ")
+		if len(parts) != 2 {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization header format"})
+			return
+		}
+		tokenString = parts[1]
+	} else {
+		tokenString = c.Query("token")
+		if tokenString == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization missing"})
+			return
+		}
+	}
+
+	claims, err := h.ParseToken(tokenString)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	c.Set("claims", claims)
+	c.Set("username", claims["username"])
+	c.Set("isAdmin", claims["admin"])
+	c.Next()
+}

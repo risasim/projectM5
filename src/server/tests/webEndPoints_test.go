@@ -3,11 +3,13 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/risasim/projectM5/project/src/server/auth"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/risasim/projectM5/project/src/server/auth"
 
 	"github.com/risasim/projectM5/project/src/server/communication"
 	"github.com/risasim/projectM5/project/src/server/state"
@@ -176,6 +178,36 @@ func TestJoinGame(t *testing.T) {
 			assert.Equal(t, http.StatusOK, w.Code)
 		}
 	}
+}
+
+func TestGetSessionPlayers(t *testing.T) {
+	ta := mock.SetupTestApp(t)
+	ta.App.GameManager.GameStatus = state.Created
+	users := []string{
+		"testuser", "testuser2", "testuser3",
+	}
+
+	for i, username := range users {
+		err := ta.App.GameManager.AddPlayer(state.Player{
+			Username:   username,
+			PiSN:       fmt.Sprintf("pi-00%d", i+1),
+			DeathSound: "default.mp3",
+		})
+		assert.NoError(t, err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/sessionPlayers", nil)
+	req.Header.Set("Authorization", "Bearer "+ta.Token)
+	w := httptest.NewRecorder()
+	ta.App.Routes.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response struct {
+		Players []string `json:"Players"`
+	}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	t.Log(response.Players)
+	assert.Equal(t, users, response.Players)
 }
 
 func TestDeleteUser(t *testing.T) {
