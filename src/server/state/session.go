@@ -22,22 +22,22 @@ type GameMode interface {
 // FreeForAll is a game mode where the players are competing against each other, without reviving
 type FreeForAll struct {
 	// deadPeople stores the people that have already being killed
-	deadPeople []Player
+	deadPeople []*Player
 	// session that is the GameMode played in
 	session Session
 }
 
 func NewFreeForAll(session *Session) *FreeForAll {
 	return &FreeForAll{
-		deadPeople: make([]Player, 0),
+		deadPeople: make([]*Player, 0),
 		session:    *session,
 	}
 }
 
-func NewInfected(session *Session) *FreeForAll {
-	return &FreeForAll{
-		deadPeople: make([]Player, 0),
-		session:    *session,
+func NewInfected(session *Session) *Infected {
+	return &Infected{
+		infectedPeople: make([]Player, 0),
+		session:        *session,
 	}
 }
 
@@ -52,9 +52,15 @@ func NewTeamDeatchMatch(session *Session) *TeamDeathMatch {
 
 // registerHit in freefall does add the user to the death people without reviving
 func (ffl *FreeForAll) registerHit(dt communication.HitData) communication.HitResponse {
+	for _, dead := range ffl.deadPeople {
+		if dead.PiSN == dt.Victim {
+			return communication.HitResponse{}
+		}
+	}
+
 	for i := range ffl.session.Player {
 		if ffl.session.Player[i].PiSN == dt.Victim {
-			ffl.deadPeople = append(ffl.deadPeople, ffl.session.Player[i])
+			ffl.deadPeople = append(ffl.deadPeople, &ffl.session.Player[i])
 			return communication.HitResponse{
 				PlaySound: true,
 				SoundName: ffl.session.Player[i].DeathSound,
@@ -72,20 +78,14 @@ func (ffl *FreeForAll) registerHit(dt communication.HitData) communication.HitRe
 func (ffl *FreeForAll) generateData() communication.LeaderboardMessage {
 	dead := make([]communication.LeaderboardPlayer, len(ffl.deadPeople))
 	for i, player := range ffl.deadPeople {
-		dead[i] = communication.LeaderboardPlayer{
-			Username: player.Username,
-		}
+		dead[i] = communication.LeaderboardPlayer{Username: player.Username}
 	}
 
-	details := communication.FreefallLeaderboard{
-		DeadPlayers: dead,
-	}
+	details := communication.FreefallLeaderboard{DeadPlayers: dead}
 
 	players := make([]communication.LeaderboardPlayer, len(ffl.session.Player))
 	for i, player := range ffl.session.Player {
-		players[i] = communication.LeaderboardPlayer{
-			Username: player.Username,
-		}
+		players[i] = communication.LeaderboardPlayer{Username: player.Username}
 	}
 
 	jsonRaw, err := json.Marshal(details)
@@ -93,12 +93,11 @@ func (ffl *FreeForAll) generateData() communication.LeaderboardMessage {
 		fmt.Println("Error marshalling response:", err)
 	}
 
-	res := communication.LeaderboardMessage{
+	return communication.LeaderboardMessage{
 		GameType: communication.Freefall,
 		Data:     jsonRaw,
 		Players:  players,
 	}
-	return res
 }
 
 // finished returns true if the array length of dead people matches the array length of the Player array in the session
@@ -121,6 +120,9 @@ type TeamDeathMatch struct {
 
 func (tdm *TeamDeathMatch) registerHit(dt communication.HitData) communication.HitResponse {
 	tdm.divisions[dt.Victim].score -= 100
+	if tdm.divisions[dt.Victim].score < 0 {
+		tdm.divisions[dt.Victim].score = 0
+	}
 	for i := range tdm.session.Player {
 		if tdm.session.Player[i].PiSN == dt.Victim {
 			return communication.HitResponse{
@@ -141,7 +143,7 @@ func (tdm *TeamDeathMatch) generateData() communication.LeaderboardMessage {
 	teams := make([]communication.DeathMatchTeam, len(tdm.teams))
 
 	for i, team := range tdm.teams {
-		members := make([]communication.LeaderboardPlayer, len(team.members))
+		members := make([]communication.LeaderboardPlayer, 0, len(team.members))
 		for _, member := range team.members {
 			members = append(members, communication.LeaderboardPlayer{
 				Username: member.Username,
@@ -192,28 +194,37 @@ func (tdm *TeamDeathMatch) finished() bool {
 // startGame does initilise the game by splitting the users into two teams
 func (tdm *TeamDeathMatch) startGame(sess *Session) {
 	tdm.session = *sess
+	tdm.divisions = make(map[string]*Team)
+	tdm.teams = make([]Team, 0, 2)
+
 	team1 := Team{
 		score:   1500,
 		name:    "kittens",
 		members: make([]Player, 0),
 	}
-
 	team2 := Team{
 		score:   1500,
 		name:    "mittens",
 		members: make([]Player, 0),
 	}
+
 	for i := range tdm.session.Player {
+		player := tdm.session.Player[i]
 		if i%2 == 0 {
-			team1.members = append(team1.members, tdm.session.Player[i])
+			team1.members = append(team1.members, player)
+			tdm.divisions[player.PiSN] = &team1
 		} else {
-			team2.members = append(team2.members, tdm.session.Player[i])
+			team2.members = append(team2.members, player)
+			tdm.divisions[player.PiSN] = &team2
 		}
 	}
+
+	tdm.teams = append(tdm.teams, team1, team2)
 }
 
 func (ffl *FreeForAll) startGame(sess *Session) {
 	ffl.session = *sess
+	ffl.deadPeople = make([]*Player, 0)
 }
 
 func (inf *Infected) startGame(sess *Session) {

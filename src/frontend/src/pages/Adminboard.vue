@@ -13,11 +13,11 @@
         <div class="gametype-select">
           <label for="gametype">Choose gametype:</label>
           <select
-            id="gametype"
-            class="adminboard-select"
-            v-model="gameMode"
-            @change="onGameModeChange"
-            :disabled="isGameActive"
+              id="gametype"
+              class="adminboard-select"
+              v-model="gameMode"
+              @change="onGameModeChange"
+              :disabled="isGameActive"
           >
             <option value="Freefall">FreeFall</option>
             <option value="Infected">Infected</option>
@@ -27,20 +27,20 @@
 
         <table class="player-table">
           <thead>
-            <tr>
-              <th>Player</th>
-              <th>Team</th>
-              <th>Status</th>
-            </tr>
+          <tr>
+            <th>Player</th>
+            <th>Team</th>
+            <th>Status</th>
+          </tr>
           </thead>
           <tbody>
-            <tr v-for="player in players" :key="player.username">
-              <td>{{ player.username }}</td>
-              <td>{{ player.team || '-' }}</td>
-              <td :class="{ online: player.online, offline: !player.online }">
-                {{ player.online ? 'Online' : 'Offline' }}
-              </td>
-            </tr>
+          <tr v-for="player in players" :key="player.username">
+            <td>{{ player.username }}</td>
+            <td>{{ player.team || '-' }}</td>
+            <td :class="{ online: player.online, offline: !player.online }">
+              {{ player.online ? 'Online' : 'Offline' }}
+            </td>
+          </tr>
           </tbody>
         </table>
 
@@ -134,7 +134,7 @@ export default {
       console.log('[fetchAllUsers] fetching from:', url);
 
       try {
-        const res = await fetch(url, {
+        const response = await fetch(url, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -142,8 +142,8 @@ export default {
           }
         });
 
-        console.log('[fetchAllUsers] response status:', res.status);
-        const text = await res.text();
+        console.log('[fetchAllUsers] response status:', response.status);
+        const text = await response.text();
         let data;
         try { data = JSON.parse(text); }
         catch (err) {
@@ -174,15 +174,15 @@ export default {
         return;
       }
 
-      const url = '/api/api/sessionPlayers';
+      const url = '/api/sessionPlayers';
       try {
-        const res = await fetch(url, {
+        const response = await fetch(url, {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
           credentials: 'include'
         });
 
-        const text = await res.text();
+        const text = await response.text();
         console.log('Raw response:', text.substring(0, 300));
 
         let data;
@@ -191,18 +191,18 @@ export default {
           return;
         }
 
-        if (res.ok && data.status === 'success') {
+        if (response.ok && data.status === 'success') {
           const sessionUsers = new Set(data.Players);
           this.players = this.players.map(p => ({
             ...p,
             online: sessionUsers.has(p.username)
           }));
-        } else if (res.status === 400 && data.error) {
+        } else if (response.status === 400 && data.error) {
           console.warn(data.error);
           this.players = this.players.map(p => ({ ...p, online: false }));
           this.isGameActive = false;
           this.message = data.error;
-        } else if (res.status === 401 || res.status === 403) {
+        } else if (response.status === 401 || response.status === 403) {
           this.message = 'Session expired. Please log in again.';
           this.$router.push('/login');
         }
@@ -224,10 +224,10 @@ export default {
           body: JSON.stringify({ game_type: this.gameMode })
         });
 
-        console.log('[createGame] response:', res.status);
-        const data = await res.json().catch(() => ({}));
+        console.log('[createGame] response:', response.status);
+        const data = await response.json().catch(() => ({}));
 
-        if (res.ok && data.status === 'success') {
+        if (response.ok && data.status === 'success') {
           console.log(data);
           this.message = data.message;
           this.isGameActive = true;
@@ -249,7 +249,7 @@ export default {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await response.json();
         console.log('[startGame] response:', data);
 
         this.message = data.message || 'Game started';
@@ -267,7 +267,7 @@ export default {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });
-        const data = await res.json();
+        const data = await response.json();
         console.log('[stopGame] response:', data);
 
         this.message = data.message || 'Game stopped.';
@@ -339,7 +339,7 @@ export default {
     },
 
     goToLeaderboard() {
-      const map = {
+      const routes = {
         Freefall: '/leaderboard-ffa',
         Infected: '/leaderboard-inf',
         TeamDeathmatch: '/leaderboard-tdm'
@@ -380,181 +380,181 @@ export default {
 </style>
 
 <style scoped>
-  .adminboard-container {
-    width: 55%;
-    max-width: 800px;
-    background: #fff;
-    border: 0.25vw solid #000;
-    border-radius: 1vw;
-    padding: 2.5vw 2vw;
-    box-shadow: 0 0.8vw 1.5vw rgba(0, 0, 0, 0.25);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;  
-    align-items: center;      
-  }
+.adminboard-container {
+  width: 55%;
+  max-width: 800px;
+  background: #fff;
+  border: 0.25vw solid #000;
+  border-radius: 1vw;
+  padding: 2.5vw 2vw;
+  box-shadow: 0 0.8vw 1.5vw rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
 
-  .gametype-select {
-    margin-bottom: 2rem;
-  }
+.gametype-select {
+  margin-bottom: 2rem;
+}
 
-  .top-buttons {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2vw;
-  }
+.top-buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2vw;
+}
 
-  .left-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.7vw;
-  }
+.left-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7vw;
+}
 
-  .adminboard-title {
-    font-size: 1.8vw;
-    font-weight: 700;
-    text-align: center;
-  }
+.adminboard-title {
+  font-size: 1.8vw;
+  font-weight: 700;
+  text-align: center;
+}
 
-  .adminboard-btn {
-    background-color: #ffffff;
-    border: 0.15vw solid #000;
-    color: black;
-    font-weight: 600;
-    padding: 0.6vw 1.2vw;
-    border-radius: 0.5vw;
-    cursor: pointer;
-    font-size: 1vw;
-    transition: all 0.25s ease;
-    box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.1);
-  }
+.adminboard-btn {
+  background-color: #ffffff;
+  border: 0.15vw solid #000;
+  color: black;
+  font-weight: 600;
+  padding: 0.6vw 1.2vw;
+  border-radius: 0.5vw;
+  cursor: pointer;
+  font-size: 1vw;
+  transition: all 0.25s ease;
+  box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.1);
+}
 
-  .adminboard-btn:hover {
-    background-color: #dac3c3;
-    transform: translateY(-0.1vw);
-  }
+.adminboard-btn:hover {
+  background-color: #dac3c3;
+  transform: translateY(-0.1vw);
+}
 
-  .adminboard-btn:active { 
-    background-color: #e6e6e6; 
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); 
-    transform: translateY(0); 
-    transition: all 0.1s ease-in; 
-  } 
+.adminboard-btn:active {
+  background-color: #e6e6e6;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+  transition: all 0.1s ease-in;
+}
 
-  .adminboard-btn:active { 
-    transform: translateY(0); 
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); 
-  }
+.adminboard-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
 
-  .gametype-select {
-    text-align: center;
-    margin-bottom: 1.5vw;
-  }
+.gametype-select {
+  text-align: center;
+  margin-bottom: 1.5vw;
+}
 
-  .adminboard-select {
-    padding: 0.4vw 0.8vw;
-    border: 0.1vw solid #000;
-    margin-left: 0.6vw;
-    border-radius: 0.3vw;
-  }
+.adminboard-select {
+  padding: 0.4vw 0.8vw;
+  border: 0.1vw solid #000;
+  margin-left: 0.6vw;
+  border-radius: 0.3vw;
+}
 
-  .player-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 2vw;
-    text-align: center;
-    font-size: 1vw;
-  }
+.player-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2vw;
+  text-align: center;
+  font-size: 1vw;
+}
 
-  .player-table th,
-  .player-table td {
-    border: 0.1vw solid #ddd;
-    padding: 0.8vw;
-  }
+.player-table th,
+.player-table td {
+  border: 0.1vw solid #ddd;
+  padding: 0.8vw;
+}
 
-  .player-table thead {
-    background-color: #f7f7f7;
-    font-weight: 600;
-  }
+.player-table thead {
+  background-color: #f7f7f7;
+  font-weight: 600;
+}
 
-  .alive {
-    color: green;
-    font-weight: bold;
-  }
+.alive {
+  color: green;
+  font-weight: bold;
+}
 
-  .dead {
-    color: red;
-    font-weight: bold;
-  }
+.dead {
+  color: red;
+  font-weight: bold;
+}
 
-  .session-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 2vw;
-    width: 100%;
-  }
+.session-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 2vw;
+  width: 100%;
+}
 
-  .start-session,
-  .end-session {
-    font-weight: 600;
-    font-size: 1vw;
-    border-radius: 0.5vw;
-    padding: 0.8vw 1.8vw;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    border: none;
-    box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.15);
-  }
+.start-session,
+.end-session {
+  font-weight: 600;
+  font-size: 1vw;
+  border-radius: 0.5vw;
+  padding: 0.8vw 1.8vw;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: none;
+  box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.15);
+}
 
-  .start-session {
-    background-color: #28a745;
-    color: white;
-  }
+.start-session {
+  background-color: #28a745;
+  color: white;
+}
 
-  .start-session:hover {
-    background-color: #218838;
-    transform: translateY(-0.2vw);
-  }
+.start-session:hover {
+  background-color: #218838;
+  transform: translateY(-0.2vw);
+}
 
-  .start-session:active { 
-    transform: translateY(0); 
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); 
-  }
+.start-session:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
 
-  .end-session {
-    background-color: #dc3545;
-    color: white;
-  }
+.end-session {
+  background-color: #dc3545;
+  color: white;
+}
 
-  .end-session:hover {
-    background-color: #b02a37;
-    transform: translateY(-0.2vw);
-  }
+.end-session:hover {
+  background-color: #b02a37;
+  transform: translateY(-0.2vw);
+}
 
-  .online { 
-    color: green; 
-    font-weight: bold; 
-  }
-  
-  .offline { 
-    color: red; 
-    font-weight: bold; 
-  }
+.online {
+  color: green;
+  font-weight: bold;
+}
 
-  .end-session:active { 
-    transform: translateY(0); 
-    box-shadow: 0 3px 6px rgba(81, 7, 7, 0.15); 
-  }
+.offline {
+  color: red;
+  font-weight: bold;
+}
 
-  .message-box {
-    margin-top: 1vh;
-    padding: 1.2vh 2vw;
-    font-weight: 600;
-    text-align: center;
-    font-size: 1vw;
-  }
+.end-session:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(81, 7, 7, 0.15);
+}
+
+.message-box {
+  margin-top: 1vh;
+  padding: 1.2vh 2vw;
+  font-weight: 600;
+  text-align: center;
+  font-size: 1vw;
+}
 
 @media (max-width: 768px) {
   .adminboard-container {
