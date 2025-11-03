@@ -18,6 +18,10 @@ import time
 from GunSide.Gunled import changecolor
 from GunSide.Transmitter import shoot
 
+import os
+from dotenv import load_dotenv , set_key
+
+
 
 
 
@@ -72,24 +76,54 @@ class WebClient:
         except IOError as e:
             print(f"an error occured while writing file:\n{e}")
     
+
+
+    def get_serial(self):
+        try:
+            with open('/sys/firmware/devicetree/base/serial-number', 'r') as f:
+                serial = f.read().strip()
+                return serial.replace('\x00','')
+        except FileNotFoundError:
+            try:
+                with open('/proc/cpuinfo', 'r') as f:
+                    for line in f:
+                        if line.startswith('Serial'):
+                            return line.split(":")[1].strip()
+            except Exception as e:
+                print(f"expetion\n{e}")
+        except Exception as e:
+                print(f"expetion\n{e}")
     def authenticate(self):
         try:
+            API_KEY_NAME = "API_KEY_RPI"
+            load_dotenv()
+
+            api_key = os.getenv(API_KEY_NAME)
+            print(f"this is the api_key i got from the env file{api_key}")
+            pi_sn = self.get_serial()
+            print(pi_sn)
             headers = {"Content-Type": "application/json"}
             payload = {
-            "apiKey":self.api_key,
-            "piSn": self.pi_sn
+            "apiKey":api_key,
+            "piSn": pi_sn
             }
             res = requests.post(self.http_url + "/api/piAuth",json=payload,headers=headers, timeout=10
                 #what do we do with the response of this request?
             )
             res.raise_for_status()
-
             response = res.json()
             self.token = response.get("token")
             self.auth_header = {"Authorization": f"Bearer {self.token}"}
             print(f"authentication done token is:{self.token}")
-        except requests.exceptions.RequestException:
-            print("requeset.exceptions.requestException happend")
+
+            if not api_key:
+                apikey = response.get("apikey")
+                if apikey:
+                    dotenv_file = ".env"
+                    set_key(dotenv_file, API_KEY_NAME, apikey )
+
+        except requests.exceptions.RequestException as e:
+            print(f"requeset.exceptions.requestException happend {e}")
         except Exception as e:
             print(f"Error:\n{e}")
 
@@ -194,6 +228,7 @@ class WebClient:
         async def send_coroutine():
             print("in send coroutine")
             try:
+                print(message)
                 await self.web_sock.send(message)
             except Exception as e:
                 print(f"an error happend:\n{e}")
