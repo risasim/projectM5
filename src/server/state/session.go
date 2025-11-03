@@ -229,7 +229,8 @@ func (ffl *FreeForAll) startGame(sess *Session) {
 
 func (inf *Infected) startGame(sess *Session) {
 	inf.session = *sess
-	//TODO to select the first infected person and sent to
+	inf.infectedPeople = make([]Player, 0)
+	inf.infectedPeople = append(inf.infectedPeople, inf.session.Player[len(inf.session.Player)%3])
 }
 
 // Team are the collaborating players,they cannot kill each other
@@ -253,16 +254,55 @@ type Infected struct {
 }
 
 func (inf *Infected) registerHit(dt communication.HitData) communication.HitResponse {
-	//TODO implement me
-	panic("implement me")
+	for _, dead := range inf.infectedPeople {
+		if dead.PiSN == dt.Victim {
+			return communication.HitResponse{}
+		}
+	}
+
+	for i := range inf.session.Player {
+		if inf.session.Player[i].PiSN == dt.Victim {
+			inf.infectedPeople = append(inf.infectedPeople, inf.session.Player[i])
+			return communication.HitResponse{
+				PlaySound: false,
+				SoundName: inf.session.Player[i].DeathSound,
+				Dead:      false,
+				Revive:    false,
+				ReviveIn:  0,
+			}
+		}
+	}
+	println("Victim not found")
+	return communication.HitResponse{}
 }
 
 // generateData returns reversed list of infected people as people are added as they get infected
-func (inf *Infected) generateData() []Player {
-	for i, j := 0, len(inf.infectedPeople)-1; i < j; i, j = i+1, j-1 {
-		inf.infectedPeople[i], inf.infectedPeople[j] = inf.infectedPeople[j], inf.infectedPeople[i]
+func (inf *Infected) generateData() communication.LeaderboardMessage {
+	dead := make([]communication.LeaderboardPlayer, len(inf.infectedPeople))
+	for i, player := range inf.infectedPeople {
+		dead[i] = communication.LeaderboardPlayer{Username: player.Username}
 	}
-	return inf.infectedPeople
+
+	data := communication.FreefallLeaderboard{DeadPlayers: dead}
+
+	players := make([]communication.LeaderboardPlayer, len(inf.session.Player))
+	for i, player := range inf.session.Player {
+		players[i] = communication.LeaderboardPlayer{
+			Username: player.Username,
+		}
+	}
+
+	jsonRaw, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshalling response:", err)
+	}
+
+	res := communication.LeaderboardMessage{
+		GameType: communication.TeamDeathmatch,
+		Data:     jsonRaw,
+		Players:  players,
+	}
+	return res
 }
 
 // finished returns true if the array length of infected people matches the array length of the Player array in the session
