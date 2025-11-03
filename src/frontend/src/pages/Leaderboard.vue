@@ -1,9 +1,7 @@
 <template>
   <div class="leaderboard-selection-page">
     <h1 class="info-text">
-      This page is temporary until we figure out sessions.<br />
-      When the server starts, the leaderboard button will direct you to the 
-      respective leaderboard of the session.
+      
     </h1>
 
     <div class="button-container">

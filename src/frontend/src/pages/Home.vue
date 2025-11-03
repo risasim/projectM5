@@ -71,18 +71,8 @@ export default {
       }
     },
     goToLeaderboard() {
-      // will be replaced with live socket logic, placeholder
-      const gameMode = this.selectedGameMode;
-      if (gameMode === 'FreeFall') {
-        this.$router.push('/leaderboard-ffa');
-      } else if (gameMode === 'Infected') {
-        this.$router.push('/leaderboard-inf');
-      } else if (gameMode === 'Team Deathmatch') {
-        this.$router.push('/leaderboard-tdm');
-      } else {
-        this.$router.push('/leaderboard');
-      }
-    }
+    this.$router.push('/leaderboard');
+  }
   }
 };
 </script>
