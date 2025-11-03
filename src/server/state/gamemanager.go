@@ -65,8 +65,8 @@ func (gm *GameManager) CreateNewGame(gameType communication.GameType) error {
 
 	// Initialise a new game session
 	gm.CurrentSession = &Session{
-		Player:   []Player{},
-		hitData:  []communication.HitData{},
+		Player:   make([]Player, 0),
+		hitData:  make([]communication.HitData, 0),
 		GameType: gameType,
 	}
 
