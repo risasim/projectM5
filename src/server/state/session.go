@@ -113,7 +113,7 @@ type TeamDeathMatch struct {
 	// divisions is map from the players to the
 	divisions map[string]*Team
 	// teams is an Array of all teams in the session
-	teams []Team
+	teams []*Team
 	// session that is the GameMode played in
 	session Session
 }
@@ -195,14 +195,14 @@ func (tdm *TeamDeathMatch) finished() bool {
 func (tdm *TeamDeathMatch) startGame(sess *Session) {
 	tdm.session = *sess
 	tdm.divisions = make(map[string]*Team)
-	tdm.teams = make([]Team, 0, 2)
+	tdm.teams = make([]*Team, 0, 2)
 
-	team1 := Team{
+	team1 := &Team{
 		score:   1500,
 		name:    "kittens",
 		members: make([]Player, 0),
 	}
-	team2 := Team{
+	team2 := &Team{
 		score:   1500,
 		name:    "mittens",
 		members: make([]Player, 0),
@@ -212,10 +212,10 @@ func (tdm *TeamDeathMatch) startGame(sess *Session) {
 		player := tdm.session.Player[i]
 		if i%2 == 0 {
 			team1.members = append(team1.members, player)
-			tdm.divisions[player.PiSN] = &team1
+			tdm.divisions[player.PiSN] = team1
 		} else {
 			team2.members = append(team2.members, player)
-			tdm.divisions[player.PiSN] = &team2
+			tdm.divisions[player.PiSN] = team2
 		}
 	}
 
@@ -298,7 +298,7 @@ func (inf *Infected) generateData() communication.LeaderboardMessage {
 	}
 
 	res := communication.LeaderboardMessage{
-		GameType: communication.TeamDeathmatch,
+		GameType: communication.Infected,
 		Data:     jsonRaw,
 		Players:  players,
 	}
