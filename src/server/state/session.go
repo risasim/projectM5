@@ -42,7 +42,12 @@ func NewInfected(session *Session) *FreeForAll {
 }
 
 func NewTeamDeatchMatch(session *Session) *TeamDeathMatch {
-	return &TeamDeathMatch{}
+	return &TeamDeathMatch{
+		time:      60,
+		divisions: make(map[string]*Team),
+		teams:     make([]Team, 0),
+		session:   *session,
+	}
 }
 
 // registerHit in freefall does add the user to the death people without reviving

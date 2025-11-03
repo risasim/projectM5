@@ -70,8 +70,17 @@ func (gm *GameManager) CreateNewGame(gameType communication.GameType) error {
 		GameType: gameType,
 	}
 
+	switch gameType {
+	case communication.TeamDeathmatch:
+		gm.Game = NewTeamDeatchMatch(gm.CurrentSession)
+	case communication.Infected:
+		gm.Game = NewInfected(gm.CurrentSession)
+	default:
+		gm.Game = NewFreeForAll(gm.CurrentSession)
+	}
+
 	gm.GameStatus = Created
-	fmt.Println("Game created")
+	fmt.Println("Game created with " + gameType.String())
 	return nil
 }
 
