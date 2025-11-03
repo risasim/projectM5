@@ -78,7 +78,6 @@ export default {
   },
 
   methods: {
-    /** 🔐 Retrieve token or redirect if not logged in */
     getAuthToken() {
       const token = sessionStorage.getItem('authToken');
       console.log('[getAuthToken] token:', token);
@@ -91,7 +90,6 @@ export default {
       return token;
     },
 
-    /** 🎮 Handle mode change */
     onGameModeChange() {
       console.log('[onGameModeChange] triggered:', this.gameMode);
       if (this.isGameActive) return;
@@ -99,7 +97,6 @@ export default {
       sessionStorage.setItem('selectedGameMode', this.gameMode);
     },
 
-    /** 🔁 Poll both game status and session players */
     async pollGameStatusAndPlayers() {
       const token = this.getAuthToken();
       if (!token) return;
