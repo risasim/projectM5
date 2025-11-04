@@ -45,7 +45,7 @@ func NewTeamDeatchMatch(session *Session) *TeamDeathMatch {
 	return &TeamDeathMatch{
 		time:      60,
 		divisions: make(map[string]*Team),
-		teams:     make([]Team, 0),
+		teams:     make([]*Team, 0),
 		session:   *session,
 	}
 }
