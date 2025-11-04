@@ -19,9 +19,9 @@
         <table class="leaderboard-table">
           <thead>
             <tr>
-              <th>Member</th>
-              <th>Deaths</th>
-              <th>Score (Hits)</th>
+              <th>Player</th>
+              <th>Status</th>
+              <th>Team</th>
             </tr>
           </thead>
           <tbody>
@@ -51,14 +51,12 @@ export default {
     };
   },
   computed: {
-    // sort the teams by total score in descending order
     sortedTeams() {
       return this.teams
         .slice()
         .sort((a, b) => b.score - a.score)
         .map(team => ({
           ...team,
-          // each team members sorted by score(descending) and deaths(ascending)
           sortedMembers: team.members
             .slice()
             .sort((a, b) => b.score - a.score || a.deaths - b.deaths)
@@ -152,7 +150,7 @@ export default {
           if (message.game_type?.toLowerCase() === 'teamdeathmatch' && Array.isArray(message.teams)) {
             this.teams = message.teams.map(team => ({
               name: team.name,
-              score: team.score || 0,
+              status: player.status || 'unknown',
               members: team.members?.map(m => ({
                 username: m.username,
                 deaths: m.deaths || 0,
