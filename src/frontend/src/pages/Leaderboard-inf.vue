@@ -15,20 +15,18 @@
             <th>Rank</th>
             <th>Player</th>
             <th>Status</th>
-            <th>Score</th>
           </tr>
         </thead>
         <tbody>
            <tr v-if="players.length === 0">
-             <td colspan="4">{{ serverGameStatus === 'Started' ? 'Waiting for player data...' : 'Game not active.' }}</td>
+             <td colspan="3">{{ serverGameStatus === 'Started' ? 'Waiting for player data...' : 'Game not active.' }}</td>
           </tr>
           <tr v-for="(player, index) in sortedPlayers" :key="player.username">
             <td>{{ index + 1 }}</td>
             <td>{{ player.username }}</td>
             <td :style="{ color: player.infected ? 'red' : 'blue' }">
-              {{ player.infected ? 'Infected' : 'Survivor' }}
+              {{ player.infected ? 'Infected' : 'Safe' }}
             </td>
-            <td>{{ player.score }}</td>
           </tr>
         </tbody>
       </table>
@@ -50,11 +48,14 @@ export default {
     };
   },
   computed: {
-    // sorting: survivors first, then highest score
+    // sort survivors first
     sortedPlayers() {
-      return this.players.slice().sort((a, b) =>
-        Number(a.infected) - Number(b.infected) || b.score - a.score
-      );
+      return this.players.slice().sort((a, b) => {
+        if (a.infected !== b.infected) {
+            return a.infected ? 1 : -1; 
+        }
+        return a.username.localeCompare(b.username);
+      });
     }
   },
   methods: {
@@ -143,8 +144,8 @@ export default {
           if (message.game_type?.toLowerCase() === 'infected' && Array.isArray(message.players)) {
             this.players = message.players.map(player => ({
               username: player.username,
-              infected: !!player.infected,
-              score: player.score || 0
+              //infected: !!player.infected, idk
+              status: player.status || 'unknown',
             }));
           }
         } catch (error) {
@@ -179,6 +180,7 @@ export default {
 </script>
 
 <style scoped>
+
 .leaderboard-page {
   display: flex;
   justify-content: center;
@@ -319,4 +321,3 @@ export default {
 }
 
 </style>
-

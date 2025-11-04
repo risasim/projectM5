@@ -14,19 +14,17 @@
           <tr>
             <th>Rank</th>
             <th>Player</th>
-            <th>Deaths</th>
-            <th>Score (Hits)</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="players.length === 0">
-             <td colspan="4">{{ serverGameStatus === 'Started' ? 'Waiting for player data...' : 'Game not active.' }}</td>
+             <td colspan="3">{{ serverGameStatus === 'Started' ? 'Waiting for player data...' : 'Game not active.' }}</td>
           </tr>
           <tr v-for="(player, index) in sortedPlayers" :key="player.username">
             <td>{{ index + 1 }}</td>
             <td>{{ player.username }}</td>
-            <td>{{ player.deaths }}</td>
-            <td>{{ player.score }}</td>
+            <td :style="{ color: player.alive ? 'green' : 'red' }">{{ player.alive ? 'Alive' : 'Dead' }}</td>
           </tr>
         </tbody>
       </table>
@@ -49,12 +47,14 @@ export default {
       gameStatusPolling: null
     };
   },
-  computed: {
-    //ffa sorting
-    sortedPlayers() {
-      return this.players.slice().sort((a, b) => 
-        b.score - a.score || a.deaths - b.deaths
-      );
+    computed: {
+      sortedPlayers() {
+      return this.players.slice().sort((a, b) => {
+        if (a.alive === b.alive) {
+      return a.username.localeCompare(b.username);
+      }
+      return a.alive ? -1 : 1;
+      });
     }
   },
   methods: {
@@ -70,7 +70,7 @@ export default {
             return;
         }
         try {
-            const res = await fetch('/api/api/gameStatus', {
+            const res = await fetch('/api/gameStatus', {
                 method: 'GET',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -143,8 +143,7 @@ export default {
             if (Array.isArray(message.players)) {
               this.players = message.players.map(player => ({
                 username: player.username,
-                deaths: player.deaths || 0,
-                score: player.score || 0
+                status: player.status || 'unknown',
               }));
             }
           }
