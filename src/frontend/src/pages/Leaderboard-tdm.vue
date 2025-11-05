@@ -69,7 +69,7 @@ export default {
     },
 
     async getGameStatus() {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
             console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
             this.serverGameStatus = 'Inactive';
@@ -134,7 +134,7 @@ export default {
     },
 
     connectLeaderboard() {
-      const token = localStorage.getItem("authToken");
+      const token = sessionStorage.getItem("authToken");
       const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard?token=${token}`;
       this.websocket = new WebSocket(websocketURL);
 
@@ -145,17 +145,17 @@ export default {
       this.websocket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          console.log('[Leaderboard]', message);
 
-          // only to process the team deathmatch
-          if (message.game_type?.toLowerCase() === 'teamdeathmatch' && Array.isArray(message.teams)) {
-            this.teams = message.teams.map(team => ({
+          if (message.game_type?.toLowerCase() === 'teamdeathmatch' && message.data?.teams) {
+            this.teams = message.data.teams.map(team => ({
               name: team.name,
-              status: player.status || 'unknown',
-              members: team.members?.map(m => ({
+              score: team.score || 0,
+              members: (team.members || team.Members || []).map(m => ({
                 username: m.username,
                 deaths: m.deaths || 0,
                 score: m.score || 0
-              })) || []
+              }))
             }));
           }
         } catch (error) {

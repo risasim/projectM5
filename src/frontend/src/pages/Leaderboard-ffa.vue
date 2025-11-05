@@ -63,7 +63,7 @@ export default {
     },
     
     async getGameStatus() {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
             console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
             this.serverGameStatus = 'Inactive';
@@ -128,7 +128,7 @@ export default {
     },
 
     connectLeaderboard() {
-      const token = localStorage.getItem("authToken");
+      const token = sessionStorage.getItem("authToken");
       const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard?token=${token}`;
       this.websocket = new WebSocket(websocketURL);
 
@@ -139,12 +139,27 @@ export default {
       this.websocket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          if (message.game_type && message.game_type.toLowerCase() === 'freefall') {
+          console.log('[Leaderboard FFA Update]', message);
+
+          if (message.game_type?.toLowerCase() === 'freefall') {
+            const deadPlayers =
+                (message.data?.deadPlayers || message.data?.DeadPlayers || []).map(p => p.username);
+
             if (Array.isArray(message.players)) {
               this.players = message.players.map(player => ({
                 username: player.username,
-                status: player.status || 'unknown',
+                alive: !deadPlayers.includes(player.username)
               }));
+            }
+            else if (deadPlayers.length > 0 && this.players.length > 0) {
+              this.players.forEach((player, i) => {
+                const isAlive = !deadPlayers.includes(player.username);
+                if (player.alive !== isAlive) {
+                  this.$set
+                      ? this.$set(this.players, i, { ...player, alive: isAlive })
+                      : (this.players[i] = { ...player, alive: isAlive });
+                }
+              });
             }
           }
         } catch (error) {

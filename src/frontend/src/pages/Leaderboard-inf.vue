@@ -64,7 +64,7 @@ export default {
     },
 
     async getGameStatus() {
-        const token = localStorage.getItem('authToken');
+        const token = sessionStorage.getItem('authToken');
         if (!token) {
             console.warn('[GameStatus] No token for getGameStatus. Cannot poll.');
             this.serverGameStatus = 'Inactive';
@@ -129,7 +129,7 @@ export default {
     },
 
     connectLeaderboard() {
-      const token = localStorage.getItem("authToken");
+      const token = sessionStorage.getItem("authToken");
       const websocketURL = `ws://116.203.97.62:8080/api/wsLeaderboard?token=${token}`;
       this.websocket = new WebSocket(websocketURL);
 
